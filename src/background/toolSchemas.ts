@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { suggestMissionsTool } from './tools/suggestMissions';
 
 export const compareResultSchema = z.object({
   winner: z.enum(['A', 'B', 'tie']),
@@ -87,6 +88,7 @@ export const TOOLS = {
       },
     },
   },
+  suggestMissions: suggestMissionsTool,
 } as const;
 
 export type ToolName = keyof typeof TOOLS;

@@ -4,6 +4,7 @@ import type { CompareResult } from './compare';
 import type { LumiPreview } from './lumiPreview';
 import type { AgentAction } from './agentAction';
 import type { Mission } from './mission';
+import type { MissionSuggestions, PageContext } from './pageContext';
 
 export interface DetectedFormField {
   selector: string;
@@ -38,7 +39,8 @@ export type RuntimeMessage =
   | { type: 'SET_AGENT_STATE'; state: AgentState; message?: string }
   | { type: 'OPEN_SIDE_PANEL' }
   | { type: 'REMOVE_MEMORY_ITEM'; id: string }
-  | { type: 'CLEAR_MEMORY' };
+  | { type: 'CLEAR_MEMORY' }
+  | { type: 'SUGGEST_MISSIONS' };
 
 // Background -> content script (tab-targeted)
 export type TabMessage =
@@ -47,7 +49,8 @@ export type TabMessage =
   | { type: 'HIGHLIGHT_SELECTOR'; selector: string | null }
   | { type: 'SUBMIT_FORM'; selector: string }
   | { type: 'READ_CHAT'; selector: string }
-  | { type: 'CLICK_SELECTOR'; selector: string };
+  | { type: 'CLICK_SELECTOR'; selector: string }
+  | { type: 'READ_PAGE_CONTEXT' };
 
 export type RuntimeResponseMap = {
   FOCUS_HOVER: LumiResult<null>;
@@ -65,6 +68,7 @@ export type RuntimeResponseMap = {
   OPEN_SIDE_PANEL: LumiResult<null>;
   REMOVE_MEMORY_ITEM: LumiResult<null>;
   CLEAR_MEMORY: LumiResult<null>;
+  SUGGEST_MISSIONS: LumiResult<MissionSuggestions>;
 };
 
 export type TabResponseMap = {
@@ -74,4 +78,5 @@ export type TabResponseMap = {
   SUBMIT_FORM: LumiResult<{ submitted: boolean }>;
   READ_CHAT: LumiResult<{ transcript: string }>;
   CLICK_SELECTOR: LumiResult<{ clicked: boolean }>;
+  READ_PAGE_CONTEXT: LumiResult<PageContext>;
 };
