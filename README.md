@@ -7,7 +7,7 @@ Lumi World is an attention-aware Chrome extension. Instead of describing what's 
 
 Built for **AI Tinkerers · "Agents, Everywhere"** (Kuala Lumpur, 13 September 2026). See [Built during the hackathon](#built-during-the-hackathon) for exactly which parts were written during the event.
 
-![Lumi on the TechMart demo store: the mascot at the edge of the page, a Lumi Focus outline on the listings, and "Got it." after remembering one.](docs/images/lumi-focus-demo-store.png)
+![Lumi on the TechMart demo store: the mascot at the edge of the page, a Lumi Focus outline on the listings, and "Got it." after remembering one.](assets/lumi-focus-demo-store.png)
 
 ## Concepts
 
