@@ -8,11 +8,21 @@ import type { LocalKey } from '../shared/storage/storageKeys';
 
 const MODELS = ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini', 'gpt-4.1'];
 
-// Everything a take leaves behind. lumiSettings is deliberately absent: the API key and
-// the execute origins must survive a reset, or the next take starts by failing.
+// Everything a take leaves behind, including hiddenOrigins — a × clicked on the mascot in
+// an earlier take otherwise leaves Lumi invisible on that origin for the next one.
+// lumiSettings is deliberately absent: the API key and the execute origins must survive a
+// reset, or the next take starts by failing.
 // Typed as LocalKey[] so a mistyped key is a compile error rather than a key that
 // silently fails to clear and shows up as a stale panel mid-take.
-const DEMO_STATE_KEYS: LocalKey[] = ['lumiMemory', 'compareResults', 'actionLog', 'pendingPreview', 'mission', 'negotiationOutcome'];
+const DEMO_STATE_KEYS: LocalKey[] = [
+  'lumiMemory',
+  'compareResults',
+  'actionLog',
+  'pendingPreview',
+  'mission',
+  'negotiationOutcome',
+  'hiddenOrigins',
+];
 
 export function OptionsApp() {
   const settings = useLocalStorage('lumiSettings');
@@ -146,8 +156,8 @@ export function OptionsApp() {
         <span className="lumi-label">Demo</span>
         <p className="mb-3 mt-1 text-xs text-lumi-muted">
           Clears Lumi Memory, comparisons, the action log, any pending preview, the mission and the last negotiation
-          outcome, and settles Lumi to idle — so a recording take starts from an empty panel. Your API key, model and
-          site settings are kept.
+          outcome, brings the mascot back on any site you closed it on, and settles Lumi to idle — so a recording take
+          starts from an empty panel. Your API key, model and paused sites are kept.
         </p>
         <div className="flex items-center gap-3">
           <button className="lumi-btn" onClick={resetDemoState}>
