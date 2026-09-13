@@ -412,8 +412,8 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
         const preview: LumiPreview = {
           actionId: action.id,
           tabId,
-          changes: [{ selector: inputSelector, label: 'Message to seller', currentValue: '', proposedValue: `Done — ${cash(sellerPrice)} works.` }],
-          rationale: `${cash(sellerPrice)} is within your limit of ${cash(limit)}. Approving sends this and closes the deal.`,
+          changes: [{ selector: inputSelector, label: 'Message to seller', currentValue: '', proposedValue: `${cash(sellerPrice)} works — deal.` }],
+          rationale: `Send this and close the deal at ${cash(sellerPrice)}?`,
           protectedFieldCount: 0,
         };
         await setLocal('pendingPreview', preview);
