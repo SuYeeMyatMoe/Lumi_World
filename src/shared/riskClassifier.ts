@@ -7,6 +7,7 @@ const RISK_TABLE: Record<ActionType, RiskLevel> = {
   compare: 'low',
   read: 'low',
   'fill-form': 'medium',
+  'send-offer': 'medium',
   submit: 'high',
   delete: 'high',
   'navigate-payment': 'high',

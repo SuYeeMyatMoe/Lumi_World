@@ -15,6 +15,7 @@ const STATUS_LABEL: Record<AgentAction['status'], string> = {
   approved: 'Approved',
   applied: 'Applied',
   rejected: 'Rejected',
+  refused: 'Refused',
 };
 
 export function TrustPanel() {

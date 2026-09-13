@@ -5,6 +5,7 @@ import type { AgentAction } from '../types/agentAction';
 import type { LiveAgentState } from '../types/agentState';
 import type { CompareResult } from '../types/compare';
 import type { LumiPreview } from '../types/lumiPreview';
+import type { NegotiationOutcome } from '../types/negotiation';
 
 export interface LocalStorageSchema {
   lumiMemory: LumiMemoryStore;
@@ -14,6 +15,8 @@ export interface LocalStorageSchema {
   compareResults: CompareResult[];
   pendingPreview: LumiPreview | null;
   hiddenOrigins: string[];
+  // Written by the negotiation layer, read by the fallback layer.
+  negotiationOutcome: NegotiationOutcome | null;
 }
 
 export interface SessionStorageSchema {
