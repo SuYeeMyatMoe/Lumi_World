@@ -72,8 +72,9 @@
     event.preventDefault();
     var data = new FormData(form);
     var model = (data.get('laptopModel') || '').toString().trim() || 'ASUS TUF Gaming A15';
-    var budget = (data.get('budget') || '').toString().trim();
-    var price = parseOffer(budget) || agreedPrice;
+    // The price Lumi filled if there is one, else the budget, else whatever was agreed.
+    var stated = (data.get('price') || data.get('budget') || '').toString().trim();
+    var price = parseOffer(stated) || agreedPrice;
     confirmation.querySelector('strong').textContent =
       'Order #4471 placed — ' + model + (price ? ', ' + money(price) : '');
     confirmation.hidden = false;

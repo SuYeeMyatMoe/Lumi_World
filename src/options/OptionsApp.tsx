@@ -1,10 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useLocalStorage } from '../shared/storage/useChromeStorage';
 import { setLocal } from '../shared/storage/storage';
+import { sendMessage } from '../shared/messaging/sendMessage';
 import { BRAND } from '../shared/constants';
 import { DEFAULT_MODEL } from '../shared/types/settings';
+import type { LocalKey } from '../shared/storage/storageKeys';
 
 const MODELS = ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini', 'gpt-4.1'];
+
+// Everything a take leaves behind, including hiddenOrigins — a × clicked on the mascot in
+// an earlier take otherwise leaves Lumi invisible on that origin for the next one.
+// lumiSettings is deliberately absent: the API key and the execute origins must survive a
+// reset, or the next take starts by failing.
+// Typed as LocalKey[] so a mistyped key is a compile error rather than a key that
+// silently fails to clear and shows up as a stale panel mid-take.
+const DEMO_STATE_KEYS: LocalKey[] = [
+  'lumiMemory',
+  'compareResults',
+  'actionLog',
+  'pendingPreview',
+  'mission',
+  'negotiationOutcome',
+  'hiddenOrigins',
+];
 
 export function OptionsApp() {
   const settings = useLocalStorage('lumiSettings');
@@ -13,6 +31,7 @@ export function OptionsApp() {
   const [origins, setOrigins] = useState<string[]>([]);
   const [newOrigin, setNewOrigin] = useState('');
   const [saved, setSaved] = useState(false);
+  const [reset, setReset] = useState(false);
   const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
@@ -25,6 +44,15 @@ export function OptionsApp() {
     await setLocal('lumiSettings', { ...settings, openaiApiKey: key.trim(), model, disabledOrigins: origins });
     setSaved(true);
     setTimeout(() => setSaved(false), 1800);
+  };
+
+  // Removing the keys rather than writing empty values lets getLocal fall back to the
+  // defaults in storage.ts, so this never drifts from them.
+  const resetDemoState = async () => {
+    await chrome.storage.local.remove(DEMO_STATE_KEYS);
+    await sendMessage({ type: 'SET_AGENT_STATE', state: 'idle' });
+    setReset(true);
+    setTimeout(() => setReset(false), 1800);
   };
 
   const addOrigin = () => {
@@ -105,6 +133,38 @@ export function OptionsApp() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="lumi-card mt-4">
+        <span className="lumi-label text-lumi-danger">High-risk execution</span>
+        <p className="mb-3 mt-1 text-xs text-lumi-muted">
+          High-risk actions execute only on these origins; everywhere else they are gated.
+        </p>
+        <ul className="space-y-1">
+          {settings.executeHighRiskOrigins.map((o) => (
+            <li key={o} className="rounded-md border border-lumi-border bg-black/20 px-2 py-1.5 font-mono text-xs">
+              {o}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-[11px] text-lumi-muted">
+          Read-only. Approving a high-risk action anywhere else records the approval without touching the page.
+        </p>
+      </section>
+
+      <section className="lumi-card mt-4">
+        <span className="lumi-label">Demo</span>
+        <p className="mb-3 mt-1 text-xs text-lumi-muted">
+          Clears Lumi Memory, comparisons, the action log, any pending preview, the mission and the last negotiation
+          outcome, brings the mascot back on any site you closed it on, and settles Lumi to idle — so a recording take
+          starts from an empty panel. Your API key, model and paused sites are kept.
+        </p>
+        <div className="flex items-center gap-3">
+          <button className="lumi-btn" onClick={resetDemoState}>
+            Reset demo state
+          </button>
+          {reset && <span className="text-xs text-lumi-success">Demo state cleared.</span>}
+        </div>
       </section>
 
       <div className="mt-6 flex items-center gap-3">

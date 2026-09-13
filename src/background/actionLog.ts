@@ -36,6 +36,14 @@ export async function updateActionStatus(actionId: string, status: ActionStatus)
   return updated;
 }
 
+// Records the outcome of an action on the action itself — whether an approved submit
+// actually reached the page, or was only recorded because the origin is gated.
+export async function mergeActionPayload(actionId: string, patch: Record<string, unknown>): Promise<void> {
+  await updateLocal('actionLog', (log) =>
+    log.map((a) => (a.id === actionId ? { ...a, payload: { ...a.payload, ...patch } } : a)),
+  );
+}
+
 export async function findAction(actionId: string): Promise<AgentAction | null> {
   const log = await getLocal('actionLog');
   return log.find((a) => a.id === actionId) ?? null;
