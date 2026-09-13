@@ -3,6 +3,8 @@
 export interface PageCard {
   label: string;
   price: string | null;
+  // What to point HIGHLIGHT_SELECTOR and PIN_SELECTOR at for this card.
+  selector: string;
 }
 
 export interface PageContext {

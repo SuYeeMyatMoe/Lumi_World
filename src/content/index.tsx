@@ -9,6 +9,7 @@ import { resolveSelector } from '../shared/dom/selector';
 import { resolveChatSurface } from '../shared/dom/chatSurfaceDetector';
 import { LUMI_HIGHLIGHT_EVENT } from './events';
 import { readPageContext } from './pageContext';
+import { pinSelector } from './pinSelector';
 
 const HOST_ID = 'lumi-world-host';
 
@@ -64,6 +65,7 @@ registerMessageHandlers<TabMessage, TabResponseMap>({
     return { ok: true, data: null };
   },
   READ_PAGE_CONTEXT: () => ({ ok: true as const, data: readPageContext() }),
+  PIN_SELECTOR: (msg) => pinSelector(msg.selector),
 });
 
 async function mount() {
