@@ -22,6 +22,17 @@ registerMessageHandlers<TabMessage, TabResponseMap>({
     }
     return { ok: true, data: { applied } };
   },
+  // Stub — filled in by the Execution layer (CLAUDE.md 4.2).
+  SUBMIT_FORM() {
+    return { ok: false, code: 'UNKNOWN', error: 'not implemented' };
+  },
+  // Stubs — filled in by the Negotiation layer (CLAUDE.md 4.3).
+  READ_CHAT() {
+    return { ok: false, code: 'UNKNOWN', error: 'not implemented' };
+  },
+  CLICK_SELECTOR() {
+    return { ok: false, code: 'UNKNOWN', error: 'not implemented' };
+  },
   HIGHLIGHT_SELECTOR(msg) {
     const el = msg.selector ? resolveSelector(msg.selector) : null;
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' });

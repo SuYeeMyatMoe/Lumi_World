@@ -3,15 +3,22 @@ import type { AgentState, FocusScreenPos } from './agentState';
 import type { CompareResult } from './compare';
 import type { LumiPreview } from './lumiPreview';
 import type { AgentAction } from './agentAction';
+import type { Mission } from './mission';
 
 export interface DetectedFormField {
   selector: string;
   label: string;
   currentValue: string;
   kind: string;
+  // Selector of the owning <form>, so an approved submit targets the right one.
+  formSelector: string;
 }
 
-export type LumiError = { ok: false; error: string; code: 'NO_API_KEY' | 'NETWORK' | 'API' | 'PARSE' | 'NO_TAB' | 'UNKNOWN' };
+export type LumiError = {
+  ok: false;
+  error: string;
+  code: 'NO_API_KEY' | 'NETWORK' | 'API' | 'PARSE' | 'NO_TAB' | 'REFUSED' | 'UNKNOWN';
+};
 export type LumiOk<T> = { ok: true; data: T };
 export type LumiResult<T> = LumiOk<T> | LumiError;
 
@@ -20,9 +27,11 @@ export type RuntimeMessage =
   | { type: 'FOCUS_HOVER'; pos: Omit<FocusScreenPos, 'tabId'> | null }
   | { type: 'GET_TAB_ID' }
   | { type: 'FOCUS_PINNED'; snapshot: Omit<LumiFocusSnapshot, 'id' | 'createdAt' | 'tabId' | 'tabUrl' | 'tabTitle'> }
+  | { type: 'PARSE_MISSION'; goal: string }
   | { type: 'REQUEST_COMPARE'; objectAId: string; objectBId: string }
   | { type: 'REQUEST_SCORE'; objectId: string }
   | { type: 'REQUEST_FORM_FILL' }
+  | { type: 'REQUEST_OFFER'; objectId: string }
   | { type: 'REQUEST_HIGH_RISK_DEMO' }
   | { type: 'APPLY_ACTION'; actionId: string }
   | { type: 'REJECT_ACTION'; actionId: string }
@@ -35,15 +44,20 @@ export type RuntimeMessage =
 export type TabMessage =
   | { type: 'DETECT_FORM_FIELDS' }
   | { type: 'APPLY_FIELD_VALUES'; changes: { selector: string; value: string }[] }
-  | { type: 'HIGHLIGHT_SELECTOR'; selector: string | null };
+  | { type: 'HIGHLIGHT_SELECTOR'; selector: string | null }
+  | { type: 'SUBMIT_FORM'; selector: string }
+  | { type: 'READ_CHAT'; selector: string }
+  | { type: 'CLICK_SELECTOR'; selector: string };
 
 export type RuntimeResponseMap = {
   FOCUS_HOVER: LumiResult<null>;
   GET_TAB_ID: LumiResult<number>;
   FOCUS_PINNED: LumiResult<LumiFocusSnapshot>;
+  PARSE_MISSION: LumiResult<Mission>;
   REQUEST_COMPARE: LumiResult<CompareResult>;
   REQUEST_SCORE: LumiResult<LumiFocusSnapshot>;
   REQUEST_FORM_FILL: LumiResult<LumiPreview>;
+  REQUEST_OFFER: LumiResult<LumiPreview>;
   REQUEST_HIGH_RISK_DEMO: LumiResult<AgentAction>;
   APPLY_ACTION: LumiResult<AgentAction>;
   REJECT_ACTION: LumiResult<AgentAction>;
@@ -57,4 +71,7 @@ export type TabResponseMap = {
   DETECT_FORM_FIELDS: LumiResult<{ fields: DetectedFormField[]; protectedCount: number }>;
   APPLY_FIELD_VALUES: LumiResult<{ applied: number }>;
   HIGHLIGHT_SELECTOR: LumiResult<null>;
+  SUBMIT_FORM: LumiResult<{ submitted: boolean }>;
+  READ_CHAT: LumiResult<{ transcript: string }>;
+  CLICK_SELECTOR: LumiResult<{ clicked: boolean }>;
 };
