@@ -12,6 +12,7 @@ import { compareResultSchema, formFillSchema, scoreResultSchema } from './toolSc
 import { flashSuccess, setAgentState, setFocusPos, settleToIdle } from './agentState';
 import { createAction, findAction, updateActionStatus } from './actionLog';
 import { showOverlay } from '../shared/overlayVisibility';
+import { suggestMissions } from './handlers/suggestMissions';
 
 // Content scripts are "untrusted contexts" for storage.session; grant access so the
 // mini mascot can read liveAgentState without round-tripping through messaging.
@@ -279,6 +280,8 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     await setLocal('compareResults', []);
     return { ok: true, data: null };
   },
+
+  SUGGEST_MISSIONS: () => suggestMissions(),
 });
 
 // Clear stale focus when the user leaves a tab so the mascot settles.
