@@ -6,6 +6,7 @@ import { LumiMascotFull } from './LumiMascotFull';
 import { MissionPanel } from './panels/MissionPanel';
 import { MemoryPanel } from './panels/MemoryPanel';
 import { ComparePanel } from './panels/ComparePanel';
+import { FallbackPanel } from './panels/FallbackPanel';
 import { TrustPanel } from './panels/TrustPanel';
 
 function tabOrigin(url: string | undefined): string | null {
@@ -133,6 +134,7 @@ export function SidePanelApp() {
         <div className="flex flex-col gap-3 md:row-span-2 md:gap-4">
         <MemoryPanel selected={selected} onToggle={toggle} />
         <ComparePanel selected={selected} />
+        <FallbackPanel />
         </div>
 
         {/* Last in DOM (mobile order preserved), but slots under Mission on wide screens. */}
