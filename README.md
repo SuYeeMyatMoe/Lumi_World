@@ -163,7 +163,7 @@ a3d5ec1 12:39 kaylaelishevaa  feat(negotiate): chat surface detector with fixed-
 f21eb4a 12:42 kaylaelishevaa  docs: README, video script, submission pack
 ```
 
-`0b13aeb` is an import: one commit, 68 files, 7,986 insertions, containing the Lumi World MVP — mascot, focus engine, memory, the compare/score/fill tools, preview overlay, risk table, side panel and demo store. That code was written before the event; 11:30 is when it was pushed to this repo, not when it was authored. The three commits after it (`996be88`, `84560ac`, `c1c7b3e`) are fixes to that base made at the event.
+Before the window we brainstormed and scoped the idea — the three-layer plan (mandate, execution, negotiation) and the team split were decided then, no code. `0b13aeb` is an import: one commit, 68 files, 7,986 insertions, containing the Lumi World MVP — mascot, focus engine, memory, the compare/score/fill tools, preview overlay, risk table, side panel and demo store. That code was written before the event; 11:30 is when it was pushed to this repo, not when it was authored. The three commits after it (`996be88`, `84560ac`, `c1c7b3e`) are fixes to that base made at the event.
 
 Written at the event: the mandate layer, the execution layer, the scripted seller and the negotiation engine, the chat-surface detector, the failure-state polish, the memory fallback, and this documentation.
 
