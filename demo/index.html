@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TechMart — Laptops</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f6f7f9; color: #1a1a1f; }
+      header { background: #fff; border-bottom: 1px solid #e6e7eb; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+      header h1 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
+      header nav a { margin-left: 18px; color: #555; text-decoration: none; font-size: 14px; }
+      main { max-width: 1080px; margin: 0 auto; padding: 32px; }
+      h2 { font-size: 22px; margin: 0 0 6px; letter-spacing: -0.01em; }
+      .sub { color: #666; margin: 0 0 24px; font-size: 14px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
+      .card { background: #fff; border: 1px solid #e6e7eb; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+      .card .img { height: 120px; border-radius: 10px; background: linear-gradient(135deg, #dfe3ea, #c9cfd9); margin-bottom: 8px; }
+      .card h3 { margin: 0; font-size: 15px; }
+      .card .price { font-weight: 700; font-size: 17px; }
+      .card ul { margin: 4px 0 0; padding-left: 18px; color: #555; font-size: 13px; line-height: 1.5; }
+      .card button { margin-top: auto; padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; background: #fafafa; cursor: pointer; font-size: 13px; }
+      .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #eef2ff; color: #3b4bd8; width: fit-content; }
+      section.form { margin-top: 48px; background: #fff; border: 1px solid #e6e7eb; border-radius: 14px; padding: 24px; max-width: 560px; }
+      form { display: grid; gap: 14px; }
+      label { display: grid; gap: 6px; font-size: 13px; color: #333; }
+      input, select, textarea { padding: 9px 10px; border: 1px solid #d9dbe0; border-radius: 8px; font-size: 14px; font-family: inherit; background: #fff; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .submit { padding: 10px 14px; border-radius: 8px; border: none; background: #1a1a1f; color: white; font-weight: 600; cursor: pointer; }
+      .note { font-size: 12px; color: #777; }
+      footer { text-align: center; color: #999; font-size: 12px; padding: 40px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>TechMart</h1>
+      <nav><a href="#">Laptops</a><a href="#">Cameras</a><a href="#">Deals</a><a href="#">Account</a></nav>
+    </header>
+
+    <main>
+      <h2>Laptops for students &amp; creators</h2>
+      <p class="sub">Hover a card and Lumi looks at it. Alt+click to remember it.</p>
+
+      <div class="grid">
+        <article class="card">
+          <div class="img"></div>
+          <span class="badge">Best for ML</span>
+          <h3>ASUS TUF Gaming A15</h3>
+          <div class="price">RM 3,899</div>
+          <ul>
+            <li>Ryzen 7 7735HS</li>
+            <li>NVIDIA RTX 4060 8GB</li>
+            <li>16 GB DDR5 (upgradeable)</li>
+            <li>512 GB SSD · 2.2 kg</li>
+            <li>Battery ~6 h</li>
+          </ul>
+          <button>View</button>
+        </article>
+
+        <article class="card">
+          <div class="img"></div>
+          <span class="badge">Ultra-portable</span>
+          <h3>Acer Swift Go 14</h3>
+          <div class="price">RM 3,699</div>
+          <ul>
+            <li>Intel Core Ultra 5 125H</li>
+            <li>Intel Arc integrated graphics</li>
+            <li>16 GB LPDDR5X (soldered)</li>
+            <li>1 TB SSD · 1.3 kg</li>
+            <li>Battery ~12 h</li>
+          </ul>
+          <button>View</button>
+        </article>
+
+        <article class="card">
+          <div class="img"></div>
+          <span class="badge">Premium</span>
+          <h3>MacBook Air M4 13"</h3>
+          <div class="price">RM 4,399</div>
+          <ul>
+            <li>Apple M4 10-core</li>
+            <li>16 GB unified memory</li>
+            <li>256 GB SSD · 1.24 kg</li>
+            <li>Battery ~18 h</li>
+            <li>No CUDA support</li>
+          </ul>
+          <button>View</button>
+        </article>
+
+        <article class="card">
+          <div class="img"></div>
+          <span class="badge">Value</span>
+          <h3>Lenovo IdeaPad Slim 5</h3>
+          <div class="price">RM 2,999</div>
+          <ul>
+            <li>Ryzen 5 7530U</li>
+            <li>Integrated Radeon graphics</li>
+            <li>16 GB DDR4</li>
+            <li>512 GB SSD · 1.5 kg</li>
+            <li>Battery ~9 h</li>
+          </ul>
+          <button>View</button>
+        </article>
+      </div>
+
+      <section class="form">
+        <h2 style="font-size:18px">Student purchase request</h2>
+        <p class="sub">Ask Lumi to “fill form from memory” — you'll see a Lumi Preview before anything is written.</p>
+        <form onsubmit="event.preventDefault(); alert('Submitted (demo)')">
+          <div class="row">
+            <label>Full name <input name="fullName" placeholder="Jane Doe" /></label>
+            <label>Email <input name="email" type="email" placeholder="jane@uni.edu" /></label>
+          </div>
+          <label>University <input name="university" placeholder="Universiti Malaya" /></label>
+          <div class="row">
+            <label>Laptop model <input id="model" name="laptopModel" placeholder="e.g. ASUS TUF A15" /></label>
+            <label>Budget (RM) <input name="budget" placeholder="4000" /></label>
+          </div>
+          <label>Primary use
+            <select name="primaryUse">
+              <option value="">Select…</option>
+              <option>Machine learning</option>
+              <option>Design</option>
+              <option>General study</option>
+              <option>Gaming</option>
+            </select>
+          </label>
+          <label>Delivery
+            <select name="delivery">
+              <option>Standard</option>
+              <option>Express</option>
+            </select>
+          </label>
+          <label>Notes <textarea name="notes" rows="2" placeholder="Anything else?"></textarea></label>
+          <div class="row">
+            <label>Account password <input name="password" type="password" placeholder="••••••••" /></label>
+            <label>Card number <input name="cardNumber" autocomplete="cc-number" placeholder="4242 4242 4242 4242" /></label>
+          </div>
+          <p class="note">🔒 Lumi will never read or fill the password or card fields.</p>
+          <button class="submit" type="submit">Submit request</button>
+        </form>
+      </section>
+    </main>
+
+    <footer>TechMart demo page for Lumi World · not a real store</footer>
+    <!-- Dev-only: append ?preview=1 to try the overlay without loading the extension -->
+    <script type="module" src="/src/content/devPreview.tsx"></script>
+  </body>
+</html>

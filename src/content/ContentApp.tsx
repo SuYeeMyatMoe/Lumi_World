@@ -1,0 +1,125 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LumiMascot } from '../mascot/LumiMascot';
+import { useAgentState } from '../mascot/useAgentState';
+import type { MascotTarget } from '../mascot/useLookAt';
+import { useLocalStorage } from '../shared/storage/useChromeStorage';
+import { sendMessage } from '../shared/messaging/sendMessage';
+import { createSnapshot } from '../shared/dom/elementSnapshot';
+import { startFocusEngine } from './focusEngine';
+import { HighlightOverlay } from './highlightOverlay';
+import { PreviewOverlay } from './previewOverlay';
+import { LUMI_HIGHLIGHT_EVENT } from './events';
+
+interface Props {
+  shadowHost: HTMLElement;
+}
+
+export function ContentApp({ shadowHost }: Props) {
+  const live = useAgentState();
+  const pendingPreview = useLocalStorage('pendingPreview');
+  const actionLog = useLocalStorage('actionLog');
+  const [hoverTarget, setHoverTarget] = useState<Element | null>(null);
+  const [pinnedTarget, setPinnedTarget] = useState<Element | null>(null);
+  const [localBubble, setLocalBubble] = useState<string | null>(null);
+  const [tabId, setTabId] = useState<number | null>(null);
+  const pinnedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    sendMessage({ type: 'GET_TAB_ID' }).then((r) => {
+      if (r.ok) setTabId(r.data);
+    });
+  }, []);
+
+  const reportHover = useCallback((el: Element | null) => {
+    if (!el) {
+      sendMessage({ type: 'FOCUS_HOVER', pos: null });
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    sendMessage({
+      type: 'FOCUS_HOVER',
+      pos: { x: r.left + r.width / 2, y: r.top + r.height / 2, vw: window.innerWidth, vh: window.innerHeight },
+    });
+  }, []);
+
+  const pin = useCallback(async (el: Element) => {
+    const snapshot = createSnapshot(el);
+    if (!snapshot) {
+      setLocalBubble("I won't touch that — it looks sensitive.");
+      setTimeout(() => setLocalBubble(null), 2200);
+      return;
+    }
+    const result = await sendMessage({ type: 'FOCUS_PINNED', snapshot });
+    if (result.ok) {
+      setPinnedTarget(el);
+      if (pinnedTimer.current) clearTimeout(pinnedTimer.current);
+      pinnedTimer.current = setTimeout(() => setPinnedTarget(null), 1600);
+    }
+  }, []);
+
+  useEffect(() => {
+    const stop = startFocusEngine(shadowHost, {
+      onHover: (el) => {
+        setHoverTarget(el);
+        reportHover(el);
+      },
+      onPinRequest: pin,
+    });
+    return stop;
+  }, [shadowHost, reportHover, pin]);
+
+  // "Show on page" from the side panel: flash the remembered element.
+  useEffect(() => {
+    const onHighlight = (e: Event) => {
+      const el = (e as CustomEvent<Element | null>).detail;
+      if (!el) return;
+      setPinnedTarget(el);
+      if (pinnedTimer.current) clearTimeout(pinnedTimer.current);
+      pinnedTimer.current = setTimeout(() => setPinnedTarget(null), 2400);
+    };
+    window.addEventListener(LUMI_HIGHLIGHT_EVENT, onHighlight);
+    return () => window.removeEventListener(LUMI_HIGHLIGHT_EVENT, onHighlight);
+  }, []);
+
+  // Keep the reported focus position fresh while scrolling.
+  useEffect(() => {
+    if (!hoverTarget) return;
+    const onScroll = () => reportHover(hoverTarget);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [hoverTarget, reportHover]);
+
+  const target = useMemo<MascotTarget | null>(() => {
+    const el = pinnedTarget ?? hoverTarget;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }, [hoverTarget, pinnedTarget]);
+
+  const previewForThisTab = pendingPreview && tabId !== null && pendingPreview.tabId === tabId ? pendingPreview : null;
+  const previewAction = previewForThisTab ? actionLog.find((a) => a.id === previewForThisTab.actionId) ?? null : null;
+
+  const bubble = localBubble ?? live.message ?? null;
+  const bubbleClass = localBubble ? 'warning' : live.state;
+
+  const snapshotLabel = useMemo(() => (hoverTarget ? createSnapshot(hoverTarget)?.extracted.label?.slice(0, 32) : undefined), [hoverTarget]);
+
+  return (
+    <>
+      <HighlightOverlay target={pinnedTarget ?? hoverTarget} pinned={pinnedTarget !== null} label={snapshotLabel} />
+
+      {previewForThisTab && <PreviewOverlay preview={previewForThisTab} action={previewAction} />}
+
+      <div className="lumi-widget">
+        {bubble && <div className={`lumi-bubble ${bubbleClass}`}>{bubble}</div>}
+        <div
+          className="lumi-widget-canvas"
+          title="Open Lumi"
+          onClick={() => sendMessage({ type: 'OPEN_SIDE_PANEL' })}
+        >
+          <LumiMascot state={live.state} target={target} size="mini" />
+        </div>
+      </div>
+    </>
+  );
+}
