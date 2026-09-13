@@ -5,7 +5,8 @@
   "description": "Lumi — AI that understands what you mean. An attention-aware browser agent embodied by a 3D mascot.",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
+    "dev:serve": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit"
   },

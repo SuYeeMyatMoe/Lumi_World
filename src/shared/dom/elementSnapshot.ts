@@ -56,7 +56,7 @@ export function resolveFocusTarget(raw: Element | null): Element | null {
 export function createSnapshot(el: Element): PartialSnapshot | null {
   if (isSensitiveField(el)) return null;
 
-  const rawText = (el as HTMLElement).innerText ?? el.textContent ?? '';
+  const rawText = String((el as HTMLElement).innerText ?? el.textContent ?? '');
   const text = rawText.replace(/\s+/g, ' ').trim().slice(0, MAX_TEXT);
   const rect = el.getBoundingClientRect();
 

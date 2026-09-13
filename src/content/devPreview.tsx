@@ -15,7 +15,9 @@ function isDemoPage(): boolean {
 }
 
 function mountDemoPreview() {
-  if (document.getElementById(HOST_ID)) return;
+  const existing = document.getElementById(HOST_ID);
+  if (existing?.shadowRoot?.querySelector('.lumi-widget, .lumi-reopen')) return;
+  existing?.remove();
   installDevShim();
   const rt = (chrome as unknown as { runtime: { sendMessage: (m: unknown, cb?: (r: unknown) => void) => void } }).runtime;
   rt.sendMessage = (msg: unknown, cb?: (r: unknown) => void) => {

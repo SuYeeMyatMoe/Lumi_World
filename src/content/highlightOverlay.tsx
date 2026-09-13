@@ -51,7 +51,7 @@ export function HighlightOverlay({ target, pinned, working = false, label }: Pro
       <span className="lumi-highlight-tag">{working ? 'LUMI · WORKING' : pinned ? 'Remembered' : 'Lumi Focus'}</span>
       {!pinned && !working && (
         <span className="lumi-highlight-hint">
-          <kbd>Alt</kbd>+<kbd>Click</kbd> to remember{label ? ` · ${label}` : ''}
+          <kbd>Alt</kbd>+<kbd>Click</kbd> or double-click to remember{label ? ` · ${label}` : ''}
         </span>
       )}
     </div>

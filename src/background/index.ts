@@ -668,7 +668,7 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     const url = sender.tab?.url;
     if (url) {
       try {
-        await showOverlay(new URL(url).origin);
+        void showOverlay(new URL(url).origin);
       } catch {
         /* chrome:// and other non-http tabs */
       }

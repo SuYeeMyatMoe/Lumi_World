@@ -69,29 +69,44 @@ registerMessageHandlers<TabMessage, TabResponseMap>({
 });
 
 async function mount() {
-  if (window.top !== window) return; // main frame only
-  if (document.getElementById(HOST_ID)) return;
+  try {
+    if (window.top !== window) return; // main frame only
+    const existing = document.getElementById(HOST_ID);
+    if (existing) {
+      const alive = existing.shadowRoot?.querySelector('.lumi-widget, .lumi-reopen');
+      if (alive) return;
+      existing.remove();
+    }
 
-  const settings = await getLocal('lumiSettings');
-  if (settings.disabledOrigins.includes(location.origin)) return;
+    let disabled = false;
+    try {
+      const settings = await getLocal('lumiSettings');
+      disabled = Boolean(settings.disabledOrigins?.includes(location.origin));
+    } catch {
+      /* storage can be briefly unavailable after a reload — still show Lumi */
+    }
+    if (disabled) return;
 
-  const host = document.createElement('div');
-  host.id = HOST_ID;
-  host.style.position = 'fixed';
-  host.style.inset = '0';
-  host.style.zIndex = '2147483647';
-  host.style.pointerEvents = 'none';
-  const shadow = host.attachShadow({ mode: 'open' });
+    const host = document.createElement('div');
+    host.id = HOST_ID;
+    host.style.position = 'fixed';
+    host.style.inset = '0';
+    host.style.zIndex = '2147483647';
+    host.style.pointerEvents = 'none';
+    const shadow = host.attachShadow({ mode: 'open' });
 
-  const style = document.createElement('style');
-  style.textContent = overlayCss;
-  shadow.appendChild(style);
+    const style = document.createElement('style');
+    style.textContent = overlayCss;
+    shadow.appendChild(style);
 
-  const mountPoint = document.createElement('div');
-  shadow.appendChild(mountPoint);
-  document.documentElement.appendChild(host);
+    const mountPoint = document.createElement('div');
+    shadow.appendChild(mountPoint);
+    document.documentElement.appendChild(host);
 
-  createRoot(mountPoint).render(<ContentApp shadowHost={host} />);
+    createRoot(mountPoint).render(<ContentApp shadowHost={host} />);
+  } catch (error) {
+    console.error('[lumi] overlay failed to mount', error);
+  }
 }
 
 if (document.readyState === 'loading') {
