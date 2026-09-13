@@ -16,7 +16,8 @@
       .sub { color: #666; margin: 0 0 24px; font-size: 14px; }
       .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
       .card { background: #fff; border: 1px solid #e6e7eb; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
-      .card .img { height: 120px; border-radius: 10px; background: linear-gradient(135deg, #dfe3ea, #c9cfd9); margin-bottom: 8px; }
+      .card .img { height: 120px; border-radius: 10px; background: linear-gradient(135deg, #eef1f6, #dde2ea); margin-bottom: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+      .card .img svg { width: 100%; height: 100%; display: block; }
       .card h3 { margin: 0; font-size: 15px; }
       .card .price { font-weight: 700; font-size: 17px; }
       .card ul { margin: 4px 0 0; padding-left: 18px; color: #555; font-size: 13px; line-height: 1.5; }
@@ -55,7 +56,19 @@
 
       <div class="grid">
         <article class="card">
-          <div class="img"></div>
+          <div class="img">
+            <svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid meet" role="img" aria-label="ASUS TUF Gaming A15">
+              <defs>
+                <linearGradient id="s-ASUS-TUF-Gaming-A15" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#3f2230"/><stop offset="1" stop-color="#7c2d3a"/>
+                </linearGradient>
+              </defs>
+              <rect x="52" y="16" width="136" height="76" rx="6" fill="#2b2f36"/>
+              <rect x="59" y="23" width="122" height="58" rx="3" fill="url(#s-ASUS-TUF-Gaming-A15)"/>
+              <rect x="30" y="92" width="180" height="10" rx="5" fill="#2b2f36"/>
+              <rect x="102" y="95" width="36" height="4" rx="2" fill="#e5e7eb" opacity="0.55"/>
+            </svg>
+          </div>
           <span class="badge">Best for ML</span>
           <h3>ASUS TUF Gaming A15</h3>
           <div class="price">RM 3,899</div>
@@ -70,7 +83,19 @@
         </article>
 
         <article class="card">
-          <div class="img"></div>
+          <div class="img">
+            <svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Acer Swift Go 14">
+              <defs>
+                <linearGradient id="s-Acer-Swift-Go-14" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#1e3a5f"/><stop offset="1" stop-color="#2f6f9e"/>
+                </linearGradient>
+              </defs>
+              <rect x="52" y="16" width="136" height="76" rx="6" fill="#3a4250"/>
+              <rect x="59" y="23" width="122" height="58" rx="3" fill="url(#s-Acer-Swift-Go-14)"/>
+              <rect x="30" y="92" width="180" height="10" rx="5" fill="#3a4250"/>
+              <rect x="102" y="95" width="36" height="4" rx="2" fill="#e5e7eb" opacity="0.55"/>
+            </svg>
+          </div>
           <span class="badge">Ultra-portable</span>
           <h3>Acer Swift Go 14</h3>
           <div class="price">RM 3,699</div>
@@ -85,7 +110,19 @@
         </article>
 
         <article class="card">
-          <div class="img"></div>
+          <div class="img">
+            <svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid meet" role="img" aria-label="MacBook Air M4 13in">
+              <defs>
+                <linearGradient id="s-MacBook-Air-M4-13in" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#2f3339"/><stop offset="1" stop-color="#565c66"/>
+                </linearGradient>
+              </defs>
+              <rect x="52" y="16" width="136" height="76" rx="6" fill="#4a4f57"/>
+              <rect x="59" y="23" width="122" height="58" rx="3" fill="url(#s-MacBook-Air-M4-13in)"/>
+              <rect x="30" y="92" width="180" height="10" rx="5" fill="#4a4f57"/>
+              <rect x="102" y="95" width="36" height="4" rx="2" fill="#f3f4f6" opacity="0.55"/>
+            </svg>
+          </div>
           <span class="badge">Premium</span>
           <h3>MacBook Air M4 13"</h3>
           <div class="price">RM 4,399</div>
@@ -100,7 +137,19 @@
         </article>
 
         <article class="card">
-          <div class="img"></div>
+          <div class="img">
+            <svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Lenovo IdeaPad Slim 5">
+              <defs>
+                <linearGradient id="s-Lenovo-IdeaPad-Slim-5" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#1f3b36"/><stop offset="1" stop-color="#2f7d6a"/>
+                </linearGradient>
+              </defs>
+              <rect x="52" y="16" width="136" height="76" rx="6" fill="#33383f"/>
+              <rect x="59" y="23" width="122" height="58" rx="3" fill="url(#s-Lenovo-IdeaPad-Slim-5)"/>
+              <rect x="30" y="92" width="180" height="10" rx="5" fill="#33383f"/>
+              <rect x="102" y="95" width="36" height="4" rx="2" fill="#e5e7eb" opacity="0.55"/>
+            </svg>
+          </div>
           <span class="badge">Value</span>
           <h3>Lenovo IdeaPad Slim 5</h3>
           <div class="price">RM 2,999</div>
