@@ -95,6 +95,12 @@ function classOf(token: string): RegExp | null {
   return EQUIVALENT_CLASSES.find((c) => c.test(token)) ?? null;
 }
 
+// The one place that decides whether a listing meets a requirement. The side panel
+// calls this too, so what the panel scores and what the guard allows cannot drift.
+export function meetsRequirement(text: string, requirement: string): boolean {
+  return satisfies((text ?? '').toLowerCase(), requirement);
+}
+
 function satisfies(haystack: string, requirement: string): boolean {
   const needle = requirement.toLowerCase();
 
