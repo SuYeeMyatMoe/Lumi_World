@@ -33,19 +33,19 @@ export function MissionPanel() {
 
   if (mission && !editing) {
     return (
-      <section className="lumi-card border-lumi-mission/30">
-        <div className="mb-1 flex items-center justify-between">
-          <span className="lumi-label text-lumi-mission">Mission</span>
+      <section className="lumi-card border-l-2 border-l-lumi-focus">
+        <div className="lumi-section-head">
+          <span className="lumi-label text-lumi-focus">Mission</span>
           <div className="flex gap-1">
-            <button className="lumi-btn !py-1 !px-2" onClick={() => setEditing(true)}>
+            <button className="lumi-btn !min-h-8 !py-1 !px-2.5" onClick={() => setEditing(true)}>
               Edit
             </button>
-            <button className="lumi-btn !py-1 !px-2" onClick={clear}>
+            <button className="lumi-btn !min-h-8 !py-1 !px-2.5" onClick={clear}>
               Clear
             </button>
           </div>
         </div>
-        <p className="text-sm leading-snug">{mission.goal}</p>
+        <p className="text-sm font-medium leading-snug">{mission.goal}</p>
         <p className="mt-2 text-[11px] text-lumi-muted">Every object you remember is judged against this.</p>
       </section>
     );
@@ -53,15 +53,15 @@ export function MissionPanel() {
 
   return (
     <section className="lumi-card">
-      <span className="lumi-label text-lumi-mission">Mission</span>
-      <p className="mb-2 mt-1 text-xs text-lumi-muted">Tell Lumi what you are trying to do.</p>
+      <span className="lumi-label text-lumi-focus">Mission</span>
+      <p className="mb-2.5 mt-1 text-xs text-lumi-muted">Tell Lumi what you are trying to do.</p>
       <textarea
         className="lumi-input min-h-[68px] resize-none"
         placeholder="e.g. Find a laptop under RM4,000 for machine learning"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
       />
-      <div className="mt-2 flex items-center gap-2">
+      <div className="mt-2.5 flex items-center gap-2">
         <button className="lumi-btn-mission" onClick={save} disabled={!draft.trim()}>
           Set mission
         </button>
@@ -72,10 +72,14 @@ export function MissionPanel() {
         )}
       </div>
       {!mission && (
-        <div className="mt-3 flex flex-col gap-1">
+        <div className="mt-3 flex flex-col divide-y divide-lumi-border/50 border-t border-lumi-border/50">
           {EXAMPLES.map((ex) => (
-            <button key={ex} className="text-left text-[11px] text-lumi-muted hover:text-lumi-text" onClick={() => setDraft(ex)}>
-              → {ex}
+            <button
+              key={ex}
+              className="py-2 text-left text-[11px] leading-snug text-lumi-muted transition hover:text-lumi-text"
+              onClick={() => setDraft(ex)}
+            >
+              {ex}
             </button>
           ))}
         </div>

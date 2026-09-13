@@ -33,20 +33,22 @@ export function MemoryPanel({ selected, onToggle }: Props) {
 
   return (
     <section className="lumi-card">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="lumi-label text-lumi-focus">Lumi Memory · {memory.items.length}</span>
+      <div className="lumi-section-head">
+        <span className="lumi-label">
+          Lumi Memory <span className="ml-1 rounded-full bg-lumi-focus/15 px-1.5 py-px text-lumi-focus">{memory.items.length}</span>
+        </span>
         {memory.items.length > 0 && (
-          <button className="lumi-btn !py-1 !px-2" onClick={() => sendMessage({ type: 'CLEAR_MEMORY' })}>
+          <button className="lumi-btn !min-h-8 !py-1 !px-2.5" onClick={() => sendMessage({ type: 'CLEAR_MEMORY' })}>
             Clear
           </button>
         )}
       </div>
 
       {memory.items.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-lumi-border p-3 text-center">
-          <p className="text-xs text-lumi-muted">Nothing remembered yet.</p>
+        <div className="lumi-raised border-dashed p-4 text-center">
+          <p className="text-xs font-medium">Nothing remembered yet</p>
           <p className="mt-1 text-[11px] text-lumi-muted">
-            Hover anything on a page and <kbd className="rounded border border-lumi-border px-1">Alt</kbd>+click it.
+            Hover anything on a page and <kbd className="rounded-md border border-lumi-border bg-lumi-bg/60 px-1.5 py-px font-sans text-[10px]">Alt</kbd> + click it.
           </p>
         </div>
       ) : (
@@ -88,8 +90,10 @@ function MemoryCard({
   const s = item.missionScore;
   return (
     <li
-      className={`group cursor-pointer rounded-lg border p-2.5 transition ${
-        selected ? 'border-lumi-focus bg-lumi-focus/5' : 'border-lumi-border bg-black/20 hover:border-lumi-muted/40'
+      className={`group cursor-pointer rounded-xl border border-l-2 p-3 transition ${
+        selected
+          ? 'border-lumi-focus/60 border-l-lumi-focus bg-lumi-focus/[0.07]'
+          : 'border-lumi-border/60 border-l-transparent bg-lumi-raised/70 hover:border-lumi-border'
       }`}
       onClick={onToggle}
     >
@@ -98,7 +102,7 @@ function MemoryCard({
           <p className="truncate text-sm font-medium">{item.extracted.label ?? item.tagName}</p>
           <p className="truncate text-[11px] text-lumi-muted">{host}</p>
         </div>
-        {item.extracted.price && <span className="shrink-0 text-xs font-semibold text-lumi-mission">{item.extracted.price}</span>}
+        {item.extracted.price && <span className="shrink-0 text-xs font-semibold tabular-nums text-lumi-text">{item.extracted.price}</span>}
       </div>
       <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-lumi-muted">{item.text}</p>
 
@@ -108,8 +112,8 @@ function MemoryCard({
             <span className="text-lumi-muted">Mission match</span>
             <span className={`font-semibold ${s.score >= 70 ? 'text-lumi-success' : s.score >= 40 ? 'text-lumi-warn' : 'text-lumi-danger'}`}>{s.score}%</span>
           </div>
-          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/5">
-            <div className={`h-full rounded-full ${s.score >= 70 ? 'bg-lumi-success' : s.score >= 40 ? 'bg-lumi-warn' : 'bg-lumi-danger'}`} style={{ width: `${s.score}%` }} />
+          <div className="lumi-meter mt-1.5">
+            <div className={s.score >= 70 ? 'bg-lumi-success' : s.score >= 40 ? 'bg-lumi-warn' : 'bg-lumi-danger'} style={{ width: `${s.score}%` }} />
           </div>
           <p className="mt-1 text-[11px] text-lumi-text">{s.verdict}</p>
           {s.matchedConstraints.length > 0 && (
@@ -124,17 +128,17 @@ function MemoryCard({
         </div>
       )}
 
-      <div className="mt-2 flex flex-wrap items-center gap-1 opacity-80 transition group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
-        <button className="lumi-btn !py-0.5 !px-2 !text-[11px]" onClick={onScore} disabled={scoring}>
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 opacity-80 transition group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+        <button className="lumi-btn !min-h-7 !py-0.5 !px-2.5 !text-[11px]" onClick={onScore} disabled={scoring}>
           {scoring ? 'Scoring…' : s ? 'Re-score' : 'Score vs mission'}
         </button>
-        <button className="lumi-btn !py-0.5 !px-2 !text-[11px]" onClick={() => showOnPage(item)} title="Switch to the tab and scroll to it">
+        <button className="lumi-btn !min-h-7 !py-0.5 !px-2.5 !text-[11px]" onClick={() => showOnPage(item)} title="Switch to the tab and scroll to it">
           Show
         </button>
-        <button className="lumi-btn !py-0.5 !px-2 !text-[11px]" onClick={onRemove}>
+        <button className="lumi-btn !min-h-7 !py-0.5 !px-2.5 !text-[11px]" onClick={onRemove}>
           Forget
         </button>
-        {selected && <span className="ml-auto text-[10px] font-semibold uppercase tracking-wider text-lumi-focus">Selected</span>}
+        {selected && <span className="lumi-chip ml-auto border-lumi-focus/50 text-lumi-focus">Selected</span>}
       </div>
     </li>
   );

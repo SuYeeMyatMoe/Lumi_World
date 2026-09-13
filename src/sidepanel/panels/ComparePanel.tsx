@@ -32,7 +32,7 @@ export function ComparePanel({ selected }: Props) {
   return (
     <section className="lumi-card">
       <span className="lumi-label">Compare</span>
-      <p className="mb-2 mt-1 text-xs text-lumi-muted">
+      <p className="mb-3 mt-1 text-xs text-lumi-muted">
         {selected.length < 2 ? 'Select two remembered objects above.' : `“${a?.extracted.label ?? 'A'}” vs “${b?.extracted.label ?? 'B'}”`}
       </p>
       <button className="lumi-btn-primary w-full" onClick={compare} disabled={busy || !a || !b}>
@@ -48,12 +48,12 @@ export function ComparePanel({ selected }: Props) {
 function CompareCard({ result, labelA, labelB }: { result: CompareResult; labelA: string; labelB: string }) {
   const winnerLabel = result.winner === 'A' ? labelA : result.winner === 'B' ? labelB : 'Tie';
   return (
-    <div className="mt-3 rounded-lg border border-lumi-border bg-black/30 p-3">
+    <div className="lumi-raised mt-3 p-3">
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <ScoreColumn label={labelA} score={result.scoreA} winner={result.winner === 'A'} />
         <ScoreColumn label={labelB} score={result.scoreB} winner={result.winner === 'B'} />
       </div>
-      <div className="mt-3 border-t border-lumi-border pt-2">
+      <div className="mt-3 border-t border-lumi-border/60 pt-2.5">
         <p className="lumi-label text-lumi-success">Best match</p>
         <p className="text-sm font-semibold">{winnerLabel}</p>
         <p className="mt-1 text-xs text-lumi-muted">{result.summary}</p>
@@ -72,11 +72,11 @@ function CompareCard({ result, labelA, labelB }: { result: CompareResult; labelA
 
 function ScoreColumn({ label, score, winner }: { label: string; score: number; winner: boolean }) {
   return (
-    <div className={`rounded-md border p-2 ${winner ? 'border-lumi-success/50 bg-lumi-success/5' : 'border-lumi-border'}`}>
+    <div className={`rounded-lg border p-2.5 ${winner ? 'border-lumi-success/50 bg-lumi-success/[0.06]' : 'border-lumi-border/60'}`}>
       <p className="truncate text-[11px] font-medium">{label}</p>
       <p className={`mt-1 text-xl font-bold tabular-nums sm:text-2xl ${winner ? 'text-lumi-success' : 'text-lumi-text'}`}>{Math.round(score)}%</p>
-      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/5">
-        <div className={`h-full rounded-full ${winner ? 'bg-lumi-success' : 'bg-lumi-muted'}`} style={{ width: `${score}%` }} />
+      <div className="lumi-meter mt-1.5">
+        <div className={winner ? 'bg-lumi-success' : 'bg-lumi-muted/70'} style={{ width: `${score}%` }} />
       </div>
     </div>
   );

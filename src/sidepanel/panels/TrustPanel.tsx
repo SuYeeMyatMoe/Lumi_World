@@ -4,9 +4,9 @@ import { sendMessage } from '../../shared/messaging/sendMessage';
 import type { AgentAction, RiskLevel } from '../../shared/types/agentAction';
 
 const RISK_STYLE: Record<RiskLevel, string> = {
-  low: 'text-lumi-success border-lumi-success/40',
-  medium: 'text-lumi-warn border-lumi-warn/40',
-  high: 'text-lumi-danger border-lumi-danger/40',
+  low: 'text-lumi-success border-lumi-success/50',
+  medium: 'text-lumi-warn border-lumi-warn/50',
+  high: 'text-lumi-danger border-lumi-danger/50',
 };
 
 const STATUS_LABEL: Record<AgentAction['status'], string> = {
@@ -37,23 +37,21 @@ export function TrustPanel() {
   return (
     <section className="lumi-card">
       <span className="lumi-label">Lumi Trust</span>
-      <p className="mb-2 mt-1 text-xs text-lumi-muted">Every action is risk-classified in code. Lumi previews before it acts.</p>
+      <p className="mb-3 mt-1 text-xs text-lumi-muted">Every action is risk-classified in code. Lumi previews before it acts.</p>
 
-      <div className="mb-3 grid grid-cols-3 gap-1.5 text-center text-[10px]">
-        <div className="rounded-md border border-lumi-success/30 py-1 text-lumi-success">
-          LOW
-          <br />
-          <span className="text-lumi-muted">auto</span>
+      {/* Risk legend as one segmented strip, not three boxed cards */}
+      <div className="lumi-raised mb-3 grid grid-cols-3 divide-x divide-lumi-border/60 text-center text-[10px]">
+        <div className="py-1.5">
+          <span className="font-semibold uppercase tracking-wider text-lumi-success">Low</span>
+          <span className="block text-lumi-muted">auto</span>
         </div>
-        <div className="rounded-md border border-lumi-warn/30 py-1 text-lumi-warn">
-          MEDIUM
-          <br />
-          <span className="text-lumi-muted">preview</span>
+        <div className="py-1.5">
+          <span className="font-semibold uppercase tracking-wider text-lumi-warn">Medium</span>
+          <span className="block text-lumi-muted">preview</span>
         </div>
-        <div className="rounded-md border border-lumi-danger/30 py-1 text-lumi-danger">
-          HIGH
-          <br />
-          <span className="text-lumi-muted">approve</span>
+        <div className="py-1.5">
+          <span className="font-semibold uppercase tracking-wider text-lumi-danger">High</span>
+          <span className="block text-lumi-muted">approve</span>
         </div>
       </div>
 
@@ -61,14 +59,14 @@ export function TrustPanel() {
         <button className="lumi-btn flex-1" onClick={() => run('fill')} disabled={busy !== null || !!pending}>
           {busy === 'fill' ? 'Reading form…' : 'Fill form from memory'}
         </button>
-        <button className="lumi-btn flex-1 !border-lumi-danger/40" onClick={() => run('high')} disabled={busy !== null || !!pending}>
+        <button className="lumi-btn flex-1 !border-lumi-danger/50 text-lumi-danger" onClick={() => run('high')} disabled={busy !== null || !!pending}>
           Simulate high-risk
         </button>
       </div>
       {error && <p className="mt-2 text-[11px] text-lumi-warn">{error}</p>}
 
       {pending && pendingAction && (
-        <div className={`mt-3 rounded-lg border p-2.5 ${pendingAction.risk === 'high' ? 'border-lumi-danger/50 bg-lumi-danger/5' : 'border-lumi-warn/50 bg-lumi-warn/5'}`}>
+        <div className={`lumi-raised mt-3 border-l-2 p-3 ${pendingAction.risk === 'high' ? 'border-l-lumi-danger' : 'border-l-lumi-warn'}`}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold">{pendingAction.label}</span>
             <span className={`lumi-chip ${RISK_STYLE[pendingAction.risk]}`}>{pendingAction.risk}</span>
@@ -76,12 +74,12 @@ export function TrustPanel() {
           <p className="mt-1 text-[11px] text-lumi-muted">
             {pendingAction.risk === 'high' ? 'Lumi is waiting for explicit approval on the page.' : `Preview shown on the page: ${pending.changes.length} field(s).`}
           </p>
-          <div className="mt-2 flex gap-1">
-            <button className="lumi-btn !py-1 !px-2" onClick={() => sendMessage({ type: 'REJECT_ACTION', actionId: pending.actionId })}>
+          <div className="mt-2.5 flex gap-1.5">
+            <button className="lumi-btn !min-h-8 !py-1 !px-3" onClick={() => sendMessage({ type: 'REJECT_ACTION', actionId: pending.actionId })}>
               Reject
             </button>
             {pendingAction.risk !== 'high' && (
-              <button className="lumi-btn-primary !py-1 !px-2" onClick={() => sendMessage({ type: 'APPLY_ACTION', actionId: pending.actionId })}>
+              <button className="lumi-btn-primary !min-h-8 !py-1 !px-3" onClick={() => sendMessage({ type: 'APPLY_ACTION', actionId: pending.actionId })}>
                 Apply
               </button>
             )}
@@ -89,14 +87,15 @@ export function TrustPanel() {
         </div>
       )}
 
-      <div className="mt-3">
+      <div className="mt-4">
         <span className="lumi-label">Activity</span>
         {log.length === 0 ? (
-          <p className="mt-1 text-[11px] text-lumi-muted">No actions yet.</p>
+          <p className="mt-1.5 text-[11px] text-lumi-muted">No actions yet.</p>
         ) : (
-          <ul className="mt-1 max-h-48 space-y-1 overflow-y-auto pr-1">
+          /* Rows separated by hairlines, not boxed one by one */
+          <ul className="mt-1.5 max-h-52 divide-y divide-lumi-border/50 overflow-y-auto pr-1">
             {log.slice(0, 20).map((a) => (
-              <li key={a.id} className="flex items-center justify-between gap-2 rounded-md border border-lumi-border bg-black/20 px-2 py-1.5">
+              <li key={a.id} className="flex items-center justify-between gap-2 py-2">
                 <div className="min-w-0">
                   <p className="truncate text-[11.5px]">{a.label}</p>
                   <p className="text-[10px] text-lumi-muted">
