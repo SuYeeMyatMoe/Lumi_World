@@ -23,6 +23,8 @@ export function ContentApp({ shadowHost }: Props) {
   const actionLog = useLocalStorage('actionLog');
   const [hoverTarget, setHoverTarget] = useState<Element | null>(null);
   const [pinnedTarget, setPinnedTarget] = useState<Element | null>(null);
+  // Set while the background is acting on this element; cleared when it releases it.
+  const [workingTarget, setWorkingTarget] = useState<Element | null>(null);
   const [localBubble, setLocalBubble] = useState<string | null>(null);
   const [tabId, setTabId] = useState<number | null>(null);
   const pinnedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -80,7 +82,16 @@ export function ContentApp({ shadowHost }: Props) {
   // "Show on page" from the side panel: flash the remembered element.
   useEffect(() => {
     const onHighlight = (e: Event) => {
-      const el = (e as CustomEvent<Element | null>).detail;
+      const detail = (e as CustomEvent<{ el: Element | null; mode: 'focus' | 'working' } | Element | null>).detail;
+      const el = detail && 'el' in (detail as object) ? (detail as { el: Element | null }).el : (detail as Element | null);
+      const mode = detail && 'mode' in (detail as object) ? (detail as { mode: 'focus' | 'working' }).mode : 'focus';
+
+      if (mode === 'working') {
+        // Held, not timed out: the amber outline stays for as long as the action does,
+        // and a null selector is how the background says it has finished.
+        setWorkingTarget(el);
+        return;
+      }
       if (!el) return;
       setPinnedTarget(el);
       if (pinnedTimer.current) clearTimeout(pinnedTimer.current);
@@ -99,11 +110,11 @@ export function ContentApp({ shadowHost }: Props) {
   }, [hoverTarget, reportHover]);
 
   const target = useMemo<MascotTarget | null>(() => {
-    const el = pinnedTarget ?? hoverTarget;
+    const el = workingTarget ?? pinnedTarget ?? hoverTarget;
     if (!el) return null;
     const r = el.getBoundingClientRect();
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-  }, [hoverTarget, pinnedTarget]);
+  }, [hoverTarget, pinnedTarget, workingTarget]);
 
   const previewForThisTab = pendingPreview && tabId !== null && pendingPreview.tabId === tabId ? pendingPreview : null;
   const previewAction = previewForThisTab ? actionLog.find((a) => a.id === previewForThisTab.actionId) ?? null : null;
@@ -132,7 +143,12 @@ export function ContentApp({ shadowHost }: Props) {
 
   return (
     <>
-      <HighlightOverlay target={pinnedTarget ?? hoverTarget} pinned={pinnedTarget !== null} label={snapshotLabel} />
+      <HighlightOverlay
+        target={workingTarget ?? pinnedTarget ?? hoverTarget}
+        pinned={pinnedTarget !== null}
+        working={workingTarget !== null}
+        label={snapshotLabel}
+      />
 
       {previewForThisTab && <PreviewOverlay preview={previewForThisTab} action={previewAction} />}
 
