@@ -50,7 +50,8 @@ export type TabMessage =
   | { type: 'SUBMIT_FORM'; selector: string }
   | { type: 'READ_CHAT'; selector: string }
   | { type: 'CLICK_SELECTOR'; selector: string }
-  | { type: 'READ_PAGE_CONTEXT' };
+  | { type: 'READ_PAGE_CONTEXT' }
+  | { type: 'PIN_SELECTOR'; selector: string };
 
 export type RuntimeResponseMap = {
   FOCUS_HOVER: LumiResult<null>;
@@ -79,4 +80,5 @@ export type TabResponseMap = {
   READ_CHAT: LumiResult<{ transcript: string; inputSelector: string; sendSelector: string }>;
   CLICK_SELECTOR: LumiResult<{ clicked: boolean }>;
   READ_PAGE_CONTEXT: LumiResult<PageContext>;
+  PIN_SELECTOR: LumiResult<LumiFocusSnapshot>;
 };

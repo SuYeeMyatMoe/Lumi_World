@@ -4,6 +4,7 @@ import { setLocal } from '../../shared/storage/storage';
 import { sendMessage } from '../../shared/messaging/sendMessage';
 import type { Mandate } from '../../shared/types/mission';
 import { MissionSuggestions } from './MissionSuggestions';
+import { RunMission } from '../RunMission';
 
 export function MissionPanel() {
   const mission = useLocalStorage('mission');
@@ -48,6 +49,7 @@ export function MissionPanel() {
         </div>
         <p className="text-sm leading-snug">{mission.goal}</p>
         <MandateChips mandate={mission.mandate} />
+        <RunMission mission={mission} />
         <p className="mt-2 text-[11px] text-lumi-muted">
           {mission.mandate
             ? 'Limits are enforced in code. Lumi refuses rather than exceeds them.'
