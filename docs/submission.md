@@ -31,7 +31,7 @@ Every AI assistant today sits in a chatbox and asks you to describe what is alre
 
 Lumi is a small 3D companion that lives at the edge of every page. You **point** — hover a product card, a listing, a row — and Lumi turns to look at it; `Alt`+click and it remembers it. Those remembered objects persist **across tabs and sessions**, so "the one from the other tab" is something the agent can actually reason about. You then give it a goal in one plain sentence, and it compares, fills, negotiates and buys inside the page — showing you what it intends to do before it does it.
 
-The part we built at this hackathon is the **mandate**. The same sentence that states your goal states your limits: *"ML laptop, 16 GB RAM, ceiling RM4,000, walk away above it."* A forced OpenAI tool call parses that into a structure; from then on, whether a limit is met is decided by **arithmetic in code**, never by the model. When a seller counters above the ceiling, Lumi refuses — out loud, with the numbers, logged as a first-class `Refused` status — and walks away or falls back to the next-best option in its memory. When the price comes back inside the mandate, it negotiates, fills the checkout, and places the order for real on our demo store origin. Password and card fields are excluded structurally, by one guard function used by every path, and high-risk actions execute only on an origin allowlist and are gated everywhere else.
+The part we built at this hackathon is the **mandate**. The same sentence that states your goal states your limits: *"ML laptop, 16 GB RAM, ceiling RM4,000, walk away above it."* A forced OpenAI tool call parses that into a structure; from then on, whether a limit is met is decided by **arithmetic in code**, never by the model. When a seller counters above the ceiling, Lumi refuses — out loud, with the numbers, logged as a first-class `Refused` status — and walks away or falls back to the next-best option in its memory. When the price comes back inside the mandate it stops and asks once — the single approval sits at the moment money is committed, not on every message — then fills the checkout and places the order for real on our demo-store origin. One button, **Run my mission**, sequences the whole thing over the same tools: walk the page card by card, refuse what breaks the mandate, score and compare what survives, negotiate the winner. Password and card fields are excluded structurally, by one guard function used by every path, and high-risk actions execute only on an origin allowlist and are gated everywhere else.
 
 Technically: Manifest V3 (service worker + content script + side panel), React 18 and TypeScript, a procedural React Three Fiber mascot whose animation *is* the agent's state machine, `chrome.storage` as the single source of truth with `chrome.runtime` used only as RPC, and OpenAI Chat Completions with **forced tool calling plus zod validation** — the model can only ever return structured arguments, never prose and never code. Page content and chat transcripts reach the model as explicitly untrusted data, which makes prompt injection structurally inert: the worst a hostile page can do is produce a bad score.
 
@@ -49,7 +49,7 @@ What none of this can be reproduced by in a chatbox: pointing as an input modali
 
 > We built Lumi World at #AITinkerers "Agents, Everywhere" 🇲🇾
 >
-> You don't describe your screen to it — you point. It remembers across tabs, negotiates in the page's own chat box, and when the seller goes above your ceiling it *refuses*.
+> You don't describe your screen to it — you point. It remembers across tabs, negotiates in the page's own chat box on its own, and when the seller goes above your ceiling it *refuses* and walks away.
 >
 > An agent that can say no. 🧵👇
 
@@ -65,7 +65,7 @@ The full partner list does not fit in 280 characters with the body above. Post t
 >
 > Every assistant asks you to describe what's already on your screen. Lumi watches where your attention is instead: hover something, Alt+click, and it's remembered — across tabs, across sessions. Then you give it one sentence: *"ML laptop, 16 GB RAM, ceiling RM4,000, walk away above it."*
 >
-> That sentence is a **mandate**, not a prompt. The model parses it; code enforces it. When the seller counters RM4,150, Lumi says: *"That's above my mandate. I'll stop before that one."* When the price comes back inside the limit, it negotiates, fills the checkout, and places the order — every consequential step behind an explicit approval, and password and card fields excluded structurally.
+> That sentence is a **mandate**, not a prompt. The model parses it; code enforces it. When the seller counters RM4,150, Lumi says: *"That's above my mandate. I'll stop before that one."* It counters, in the chat, autonomously — every offer clamped below your limit in code — and if the seller holds above it, it walks away. When the price comes inside the limit it stops and asks once, at the moment money is committed. Then it fills the checkout and places the order behind an explicit approval, with the password and card fields excluded structurally.
 >
 > Chrome MV3 · React · React Three Fiber · OpenAI forced tool calling + zod. Repo and 2-minute demo below.
 >
