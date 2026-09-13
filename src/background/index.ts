@@ -11,7 +11,7 @@ import { LUMI_MEMORY_CAP } from '../shared/types/lumiMemory';
 import { LUMI_VOICE, uid } from '../shared/constants';
 import { callTool } from './openaiClient';
 import { compareResultSchema, formFillSchema, mandateSchema, offerSchema, scoreResultSchema } from './toolSchemas';
-import { flashSuccess, setAgentState, setFocusPos, settleToIdle } from './agentState';
+import { flashSuccess, setAgentState, setFocusPos, settleToIdle, startSettleWatchdog } from './agentState';
 import { createAction, findAction, mergeActionPayload, updateActionStatus } from './actionLog';
 import { checkMandate } from '../shared/riskClassifier';
 import { parseAmountLoose, parseLastPrice, parsePrice } from '../shared/dom/price';
@@ -22,6 +22,9 @@ import { suggestMissions } from './handlers/suggestMissions';
 // Content scripts are "untrusted contexts" for storage.session; grant access so the
 // mini mascot can read liveAgentState without round-tripping through messaging.
 chrome.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' }).catch(() => {});
+
+// Nothing may sit in a held state once there is nothing to hold it for.
+startSettleWatchdog();
 
 // Recover from the old global overlayVisible flag, which hid Lumi on every site.
 void chrome.storage.local.remove('overlayVisible');
