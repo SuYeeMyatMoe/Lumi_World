@@ -108,6 +108,7 @@ function describeMandate(mandate: Mandate | undefined): string | null {
   if (mandate.mustHave.length > 0) parts.push(`must have ${mandate.mustHave.join(', ')}`);
   if (mandate.ceiling !== null) parts.push(`never above ${mandate.currency ?? ''}${mandate.ceiling}`);
   if (mandate.walkAway !== null) parts.push(`walk away above ${mandate.currency ?? ''}${mandate.walkAway}`);
+  if (mandate.objective === 'cheapest') parts.push('among options that qualify, prefer the lowest price');
   return parts.length > 0 ? `Mandate (hard limits, enforced in code): ${parts.join('; ')}` : null;
 }
 
@@ -248,6 +249,7 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
 
     const mandate: Mandate = {
       mustHave: result.data.mustHave,
+      objective: result.data.objective ?? 'best-fit',
       ceiling: result.data.ceiling ?? null,
       currency: result.data.currency ?? null,
       walkAway: result.data.walkAway ?? null,
@@ -260,6 +262,7 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
 
   async REQUEST_COMPARE(msg) {
     const mem = await getLocal('lumiMemory');
+    const mission = await getLocal('mission');
     const a = mem.items.find((i) => i.id === msg.objectAId);
     const b = mem.items.find((i) => i.id === msg.objectBId);
     if (!a || !b) return { ok: false, code: 'UNKNOWN', error: 'One of the selected objects is no longer in Lumi Memory.' };
@@ -277,12 +280,22 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
       return result;
     }
 
+    // A tie is the model declining to choose. When the user asked for the cheapest, the
+    // tie-break is not a judgement call: take the lower price.
+    let winner = result.data.winner;
+    if (winner === 'tie' && mission?.mandate?.objective === 'cheapest') {
+      const priceA = parsePrice(a.extracted.price) ?? parsePrice(a.text);
+      const priceB = parsePrice(b.extracted.price) ?? parsePrice(b.text);
+      if (priceA !== null && priceB !== null && priceA !== priceB) winner = priceA < priceB ? 'A' : 'B';
+    }
+
     const compare: CompareResult = {
       id: uid('cmp'),
       createdAt: Date.now(),
       objectAId: a.id,
       objectBId: b.id,
       ...result.data,
+      winner,
     };
     await updateLocal('compareResults', (list) => [compare, ...list].slice(0, 20));
     await createAction('compare', `Compared "${a.extracted.label ?? 'A'}" vs "${b.extracted.label ?? 'B'}"`, {}, 'applied');

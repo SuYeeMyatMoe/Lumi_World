@@ -57,6 +57,19 @@ export function rankByScore(items: LumiFocusSnapshot[]): LumiFocusSnapshot[] {
   return [...items].sort((a, b) => (b.missionScore?.score ?? -1) - (a.missionScore?.score ?? -1));
 }
 
+// Lowest price among the survivors. An item with no readable price cannot win on price.
+export function lowestPriced(items: LumiFocusSnapshot[]): LumiFocusSnapshot | null {
+  let best: LumiFocusSnapshot | null = null;
+  let bestPrice = Number.POSITIVE_INFINITY;
+  for (const item of items) {
+    const price = parsePrice(item.extracted.price) ?? parsePrice(item.text);
+    if (price === null || price >= bestPrice) continue;
+    best = item;
+    bestPrice = price;
+  }
+  return best;
+}
+
 function plural(n: number, word: string): string {
   return n === 1 ? `1 ${word}` : `${n} ${word}s`;
 }
@@ -180,6 +193,11 @@ export async function runMission(io: RunMissionIO, mission: Mission | null): Pro
   const ranked = rankByScore(scored);
   let winner = ranked[0];
 
+  // "Cheapest" is an instruction, not a hint: among everything that already cleared the
+  // mandate, the lowest price wins outright and the comparison below only narrates.
+  const cheapestWanted = mission?.mandate?.objective === 'cheapest';
+  const cheapest = cheapestWanted ? lowestPriced(scored) : null;
+
   if (ranked.length >= 2) {
     if (io.cancelled()) return cancelledOutcome();
     await io.narrate('thinking', 'Comparing the top two…');
@@ -194,6 +212,12 @@ export async function runMission(io: RunMissionIO, mission: Mission | null): Pro
       console.warn('[run-mission] compare failed', comparison.code, comparison.error);
       await io.narrate('warning', `I couldn’t compare them (${comparison.error}) — going with the best score.`);
     }
+    await io.pause(STEP_PAUSE_MS);
+  }
+
+  if (cheapest) {
+    winner = cheapest;
+    await io.narrate('thinking', `${winner.extracted.label ?? 'This one'} is the cheapest that fits.`);
     await io.pause(STEP_PAUSE_MS);
   }
 
