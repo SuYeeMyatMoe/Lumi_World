@@ -24,9 +24,10 @@ chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() =>
 // Toolbar click reopens Lumi on pages and opens Lumi Space.
 chrome.action.onClicked.addListener(async (tab) => {
   await setLocal('overlayVisible', true);
-  const windowId = tab.windowId;
-  if (windowId !== undefined) {
-    await chrome.sidePanel.open({ windowId, tabId: tab.id }).catch(() => {});
+  if (tab.id !== undefined) {
+    await chrome.sidePanel.open({ tabId: tab.id }).catch(() => {});
+  } else if (tab.windowId !== undefined) {
+    await chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => {});
   }
 });
 

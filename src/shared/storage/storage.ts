@@ -10,6 +10,7 @@ const localDefaults: LocalStorageSchema = {
   actionLog: [],
   compareResults: [],
   pendingPreview: null,
+  overlayVisible: true,
 };
 
 const sessionDefaults: SessionStorageSchema = {

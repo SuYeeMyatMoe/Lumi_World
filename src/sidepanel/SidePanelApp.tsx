@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocalStorage } from '../shared/storage/useChromeStorage';
+import { setLocal } from '../shared/storage/storage';
 import { BRAND } from '../shared/constants';
 import { LumiMascotFull } from './LumiMascotFull';
 import { MissionPanel } from './panels/MissionPanel';
@@ -9,6 +10,7 @@ import { TrustPanel } from './panels/TrustPanel';
 
 export function SidePanelApp() {
   const settings = useLocalStorage('lumiSettings');
+  const overlayVisible = useLocalStorage('overlayVisible');
   const memory = useLocalStorage('lumiMemory');
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -33,13 +35,32 @@ export function SidePanelApp() {
           <h1 className="text-sm font-bold tracking-tight">{BRAND.name}</h1>
           <p className="text-[10.5px] text-lumi-muted">{BRAND.tagline}</p>
         </div>
-        <button className="lumi-btn !py-1 !px-2" onClick={() => chrome.runtime.openOptionsPage()} title="Options">
-          ⚙
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            className="lumi-btn !py-1 !px-2"
+            onClick={() => void setLocal('overlayVisible', !overlayVisible)}
+            title={overlayVisible ? 'Hide Lumi on pages' : 'Show Lumi on pages'}
+          >
+            {overlayVisible ? 'Hide' : 'Show'}
+          </button>
+          <button className="lumi-btn !py-1 !px-2" onClick={() => chrome.runtime.openOptionsPage()} title="Options">
+            ⚙
+          </button>
+        </div>
       </header>
 
       <main className="flex flex-1 flex-col gap-3 p-3">
         <LumiMascotFull />
+
+        {!overlayVisible && (
+          <div className="rounded-lg border border-lumi-border bg-black/20 p-2.5 text-[11.5px]">
+            <p className="font-semibold">Lumi is closed on pages</p>
+            <p className="mt-0.5 text-lumi-muted">It will stay hidden until you click Show or the Lumi toolbar icon.</p>
+            <button className="lumi-btn-primary mt-2 !py-1 !px-2" onClick={() => void setLocal('overlayVisible', true)}>
+              Show Lumi
+            </button>
+          </div>
+        )}
 
         {!hasKey && (
           <div className="rounded-lg border border-lumi-warn/40 bg-lumi-warn/5 p-2.5 text-[11.5px]">

@@ -320,6 +320,7 @@ npm run build
 | Compare two objects | Click two memory cards → **Which fits my mission better?** |
 | Jump back to a remembered object | Memory card → **Show**. |
 | Fill a form from what you remembered | On the form page → Trust → **Fill form from memory** → review → **Apply**. |
+| Close Lumi on pages | Click × on the mascot. It stays hidden until you click the toolbar icon or Show in the side panel. |
 | Keep Lumi off a site | Options → Paused sites → add the origin. |
 
 ### Developer preview (no extension load needed)

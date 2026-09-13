@@ -3,6 +3,7 @@ import { LumiMascot } from '../mascot/LumiMascot';
 import { useAgentState } from '../mascot/useAgentState';
 import type { MascotTarget } from '../mascot/useLookAt';
 import { useLocalStorage } from '../shared/storage/useChromeStorage';
+import { setLocal } from '../shared/storage/storage';
 import { sendMessage } from '../shared/messaging/sendMessage';
 import { createSnapshot } from '../shared/dom/elementSnapshot';
 import { startFocusEngine } from './focusEngine';
@@ -16,6 +17,7 @@ interface Props {
 
 export function ContentApp({ shadowHost }: Props) {
   const live = useAgentState();
+  const overlayVisible = useLocalStorage('overlayVisible');
   const pendingPreview = useLocalStorage('pendingPreview');
   const actionLog = useLocalStorage('actionLog');
   const [hoverTarget, setHoverTarget] = useState<Element | null>(null);
@@ -58,6 +60,12 @@ export function ContentApp({ shadowHost }: Props) {
   }, []);
 
   useEffect(() => {
+    if (!overlayVisible) {
+      setHoverTarget(null);
+      setPinnedTarget(null);
+      void sendMessage({ type: 'FOCUS_HOVER', pos: null });
+      return;
+    }
     const stop = startFocusEngine(shadowHost, {
       onHover: (el) => {
         setHoverTarget(el);
@@ -66,7 +74,7 @@ export function ContentApp({ shadowHost }: Props) {
       onPinRequest: pin,
     });
     return stop;
-  }, [shadowHost, reportHover, pin]);
+  }, [shadowHost, reportHover, pin, overlayVisible]);
 
   // "Show on page" from the side panel: flash the remembered element.
   useEffect(() => {
@@ -104,6 +112,13 @@ export function ContentApp({ shadowHost }: Props) {
 
   const snapshotLabel = useMemo(() => (hoverTarget ? createSnapshot(hoverTarget)?.extracted.label?.slice(0, 32) : undefined), [hoverTarget]);
 
+  const closeLumi = useCallback(() => {
+    void setLocal('overlayVisible', false);
+    void sendMessage({ type: 'FOCUS_HOVER', pos: null });
+  }, []);
+
+  if (!overlayVisible) return null;
+
   return (
     <>
       <HighlightOverlay target={pinnedTarget ?? hoverTarget} pinned={pinnedTarget !== null} label={snapshotLabel} />
@@ -112,6 +127,9 @@ export function ContentApp({ shadowHost }: Props) {
 
       <div className="lumi-widget">
         {bubble && <div className={`lumi-bubble ${bubbleClass}`}>{bubble}</div>}
+        <button type="button" className="lumi-widget-close" title="Close Lumi" aria-label="Close Lumi" onClick={closeLumi}>
+          ×
+        </button>
         <div
           className="lumi-widget-canvas"
           title="Open Lumi"
