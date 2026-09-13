@@ -11,6 +11,7 @@ const localDefaults: LocalStorageSchema = {
   compareResults: [],
   pendingPreview: null,
   hiddenOrigins: [],
+  negotiationOutcome: null,
 };
 
 const sessionDefaults: SessionStorageSchema = {

@@ -32,6 +32,7 @@ export function detectFormFields(root: ParentNode = document): FieldDetection {
       label: deriveLabel(el),
       currentValue: el.value ?? '',
       kind: el instanceof HTMLSelectElement ? 'select' : el instanceof HTMLTextAreaElement ? 'textarea' : el.type || 'text',
+      formSelector: el.form ? buildSelector(el.form) : '',
     });
   }
   return { fields: fields.slice(0, 25), protectedCount };

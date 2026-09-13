@@ -4,6 +4,7 @@ export type ActionType =
   | 'compare'
   | 'read'
   | 'fill-form'
+  | 'send-offer'
   | 'submit'
   | 'delete'
   | 'navigate-payment'
@@ -11,7 +12,7 @@ export type ActionType =
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 
-export type ActionStatus = 'proposed' | 'previewed' | 'approved' | 'applied' | 'rejected';
+export type ActionStatus = 'proposed' | 'previewed' | 'approved' | 'applied' | 'rejected' | 'refused';
 
 export interface AgentAction {
   id: string;
