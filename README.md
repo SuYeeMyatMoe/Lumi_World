@@ -234,7 +234,7 @@ src/
   mascot/         React Three Fiber Lumi: body, eyes, state config, look-at
   shared/         types, storage hooks, typed messaging, DOM utils, risk classifier, mandate check
 demo/             TechMart demo store (products, protected fields, scripted seller chat)
-docs/             video script, submission pack
+docs/             video script, pre-record checklist
 ```
 
 ## Out of scope (for now)
