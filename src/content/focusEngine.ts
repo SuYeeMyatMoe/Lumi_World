@@ -3,6 +3,7 @@ import { resolveFocusTarget } from '../shared/dom/elementSnapshot';
 export interface FocusEngineCallbacks {
   onHover: (el: Element | null) => void;
   onPinRequest: (el: Element) => void;
+  onOpenPanel?: () => void;
 }
 
 const HOVER_DEBOUNCE_MS = 120;
@@ -52,12 +53,20 @@ export function startFocusEngine(ignoreRoot: HTMLElement, callbacks: FocusEngine
   const onClick = (e: MouseEvent) => {
     if (!e.altKey) return;
     const raw = e.target as Element | null;
-    if (!raw || ignoreRoot.contains(raw)) return;
+    if (!raw || ignoreRoot.contains(raw) || raw === ignoreRoot) return;
     const target = resolveFocusTarget(raw);
     if (!target) return;
     e.preventDefault();
     e.stopPropagation();
     callbacks.onPinRequest(target);
+  };
+
+  const onDblClick = (e: MouseEvent) => {
+    const raw = e.target as Element | null;
+    if (!raw || ignoreRoot.contains(raw) || raw === ignoreRoot) return;
+    const target = resolveFocusTarget(raw);
+    if (target) callbacks.onPinRequest(target);
+    callbacks.onOpenPanel?.();
   };
 
   document.addEventListener('mousemove', onMove, { passive: true, capture: true });
@@ -66,6 +75,7 @@ export function startFocusEngine(ignoreRoot: HTMLElement, callbacks: FocusEngine
   document.addEventListener('keydown', onKeyDown, true);
   document.addEventListener('keyup', onKeyUp, true);
   document.addEventListener('click', onClick, true);
+  document.addEventListener('dblclick', onDblClick, true);
 
   return () => {
     clearHover();
@@ -75,5 +85,6 @@ export function startFocusEngine(ignoreRoot: HTMLElement, callbacks: FocusEngine
     document.removeEventListener('keydown', onKeyDown, true);
     document.removeEventListener('keyup', onKeyUp, true);
     document.removeEventListener('click', onClick, true);
+    document.removeEventListener('dblclick', onDblClick, true);
   };
 }

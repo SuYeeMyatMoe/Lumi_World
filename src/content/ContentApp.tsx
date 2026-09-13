@@ -60,6 +60,30 @@ export function ContentApp({ shadowHost }: Props) {
     }
   }, []);
 
+  const closeLumi = useCallback((e: React.MouseEvent) => {
+    if (e.detail > 1) return;
+    e.stopPropagation();
+    void hideOverlay();
+    void sendMessage({ type: 'FOCUS_HOVER', pos: null });
+  }, []);
+
+  const openLumi = useCallback(() => {
+    void showOverlay();
+  }, []);
+
+  const openSidePanel = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    void showOverlay();
+    if (tabId !== null && chrome.sidePanel?.open) {
+      void chrome.sidePanel.open({ tabId }).catch(() => {
+        void sendMessage({ type: 'OPEN_SIDE_PANEL' });
+      });
+      return;
+    }
+    void sendMessage({ type: 'OPEN_SIDE_PANEL' });
+  }, [tabId]);
+
   useEffect(() => {
     if (!overlayVisible) {
       setHoverTarget(null);
@@ -73,9 +97,10 @@ export function ContentApp({ shadowHost }: Props) {
         reportHover(el);
       },
       onPinRequest: pin,
+      onOpenPanel: () => openSidePanel(),
     });
     return stop;
-  }, [shadowHost, reportHover, pin, overlayVisible]);
+  }, [shadowHost, reportHover, pin, overlayVisible, openSidePanel]);
 
   // "Show on page" from the side panel: flash the remembered element.
   useEffect(() => {
@@ -113,18 +138,16 @@ export function ContentApp({ shadowHost }: Props) {
 
   const snapshotLabel = useMemo(() => (hoverTarget ? createSnapshot(hoverTarget)?.extracted.label?.slice(0, 32) : undefined), [hoverTarget]);
 
-  const closeLumi = useCallback(() => {
-    void hideOverlay();
-    void sendMessage({ type: 'FOCUS_HOVER', pos: null });
-  }, []);
-
-  const openLumi = useCallback(() => {
-    void showOverlay();
-  }, []);
-
   if (!overlayVisible) {
     return (
-      <button type="button" className="lumi-reopen" title="Open Lumi" aria-label="Open Lumi" onClick={openLumi}>
+      <button
+        type="button"
+        className="lumi-reopen"
+        title="Open Lumi"
+        aria-label="Open Lumi"
+        onClick={openLumi}
+        onDoubleClick={openSidePanel}
+      >
         Lumi
       </button>
     );
@@ -143,8 +166,9 @@ export function ContentApp({ shadowHost }: Props) {
         </button>
         <div
           className="lumi-widget-canvas"
-          title="Open Lumi"
-          onClick={() => sendMessage({ type: 'OPEN_SIDE_PANEL' })}
+          title="Open Lumi Space"
+          onClick={openSidePanel}
+          onDoubleClick={openSidePanel}
         >
           <LumiMascot state={live.state} target={target} size="mini" />
         </div>

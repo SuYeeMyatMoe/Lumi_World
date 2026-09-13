@@ -244,18 +244,24 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
   },
 
   async OPEN_SIDE_PANEL(_msg, sender) {
-    const url = sender.tab?.url;
-    if (url) {
+    const tabId = sender.tab?.id;
+    const windowId = sender.tab?.windowId;
+    // sidePanel.open must run in this turn — any prior await drops the user gesture
+    // and the panel never appears (including on double-click).
+    const opening =
+      tabId !== undefined
+        ? chrome.sidePanel.open({ tabId })
+        : windowId !== undefined
+          ? chrome.sidePanel.open({ windowId })
+          : Promise.resolve();
+    if (sender.tab?.url) {
       try {
-        await showOverlay(new URL(url).origin);
+        void showOverlay(new URL(sender.tab.url).origin);
       } catch {
         /* chrome:// and other non-http tabs */
       }
     }
-    const windowId = sender.tab?.windowId;
-    if (windowId !== undefined) {
-      await chrome.sidePanel.open({ windowId }).catch(() => {});
-    }
+    await opening.catch(() => {});
     return { ok: true, data: null };
   },
 
