@@ -79,6 +79,11 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     return { ok: true, data: snapshot };
   },
 
+  // Stub — filled in by the Mandate layer (CLAUDE.md 4.1).
+  async PARSE_MISSION() {
+    return { ok: false, code: 'UNKNOWN', error: 'not implemented' };
+  },
+
   async REQUEST_COMPARE(msg) {
     const mem = await getLocal('lumiMemory');
     const a = mem.items.find((i) => i.id === msg.objectAId);
@@ -187,6 +192,11 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     await updateActionStatus(action.id, 'previewed');
     await setAgentState('warning', LUMI_VOICE.needsApproval);
     return { ok: true, data: preview };
+  },
+
+  // Stub — filled in by the Negotiation layer (CLAUDE.md 4.3).
+  async REQUEST_OFFER() {
+    return { ok: false, code: 'UNKNOWN', error: 'not implemented' };
   },
 
   async REQUEST_HIGH_RISK_DEMO() {

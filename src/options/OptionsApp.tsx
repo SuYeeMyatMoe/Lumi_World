@@ -22,7 +22,7 @@ export function OptionsApp() {
   }, [settings]);
 
   const save = async () => {
-    await setLocal('lumiSettings', { openaiApiKey: key.trim(), model, disabledOrigins: origins });
+    await setLocal('lumiSettings', { ...settings, openaiApiKey: key.trim(), model, disabledOrigins: origins });
     setSaved(true);
     setTimeout(() => setSaved(false), 1800);
   };
