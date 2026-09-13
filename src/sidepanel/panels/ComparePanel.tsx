@@ -49,7 +49,7 @@ function CompareCard({ result, labelA, labelB }: { result: CompareResult; labelA
   const winnerLabel = result.winner === 'A' ? labelA : result.winner === 'B' ? labelB : 'Tie';
   return (
     <div className="mt-3 rounded-lg border border-lumi-border bg-black/30 p-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <ScoreColumn label={labelA} score={result.scoreA} winner={result.winner === 'A'} />
         <ScoreColumn label={labelB} score={result.scoreB} winner={result.winner === 'B'} />
       </div>
@@ -74,7 +74,7 @@ function ScoreColumn({ label, score, winner }: { label: string; score: number; w
   return (
     <div className={`rounded-md border p-2 ${winner ? 'border-lumi-success/50 bg-lumi-success/5' : 'border-lumi-border'}`}>
       <p className="truncate text-[11px] font-medium">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${winner ? 'text-lumi-success' : 'text-lumi-text'}`}>{Math.round(score)}%</p>
+      <p className={`mt-1 text-xl font-bold tabular-nums sm:text-2xl ${winner ? 'text-lumi-success' : 'text-lumi-text'}`}>{Math.round(score)}%</p>
       <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/5">
         <div className={`h-full rounded-full ${winner ? 'bg-lumi-success' : 'bg-lumi-muted'}`} style={{ width: `${score}%` }} />
       </div>

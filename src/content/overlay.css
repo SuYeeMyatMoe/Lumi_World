@@ -1,32 +1,65 @@
+/*
+ * Lumi on-page overlay.
+ * Tokens: one accent per state, near-black glass panels.
+ * Radii: panels 14px, controls 8px, tags/chips pill.
+ * Sizing is fluid: --lumi-size drives the mascot, everything else hangs off it.
+ */
 :host {
   all: initial;
   position: fixed;
   inset: 0;
   z-index: 2147483647;
   pointer-events: none;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   font-size: 13px;
   line-height: 1.4;
   color: #e8e8f0;
+  -webkit-font-smoothing: antialiased;
+
   --focus: #22d3ee;
   --mission: #a3e635;
   --warn: #f59e0b;
   --danger: #ef4444;
   --success: #34d399;
-  --panel: rgba(14, 14, 22, 0.92);
-  --border: rgba(255, 255, 255, 0.08);
+  --ink: #0a0a0f;
+  --panel: rgba(14, 14, 22, 0.88);
+  --panel-solid: #12121a;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --muted: #9a9aab;
+  --shadow: 0 12px 32px rgba(4, 6, 20, 0.42), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+
+  --r-panel: 14px;
+  --r-control: 8px;
+  --r-pill: 999px;
+
+  --gap: 16px;
+  --lumi-size: clamp(96px, 12vw, 132px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
 }
 
 * {
   box-sizing: border-box;
 }
 
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---------- Focus highlight ---------- */
+
 .lumi-highlight {
   position: fixed;
   pointer-events: none;
   border: 2px solid var(--focus);
-  border-radius: 8px;
-  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.12), 0 0 24px rgba(34, 211, 238, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.12), 0 0 24px rgba(34, 211, 238, 0.3);
   transition: opacity 160ms ease;
   z-index: 2147483645;
   animation: lumi-pulse 2.2s ease-in-out infinite;
@@ -34,86 +67,137 @@
 
 .lumi-highlight.pinned {
   border-color: var(--success);
-  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.15), 0 0 24px rgba(52, 211, 153, 0.4);
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.15), 0 0 24px rgba(52, 211, 153, 0.35);
   animation: none;
 }
 
 .lumi-highlight-tag {
   position: absolute;
-  top: -26px;
+  top: -24px;
   left: -2px;
-  padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 9px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #0a0a0f;
+  color: var(--ink);
   background: var(--focus);
-  border-radius: 6px 6px 0 6px;
+  border-radius: var(--r-pill);
   white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.35);
+}
+
+.lumi-highlight-tag::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: 0.55;
 }
 
 .lumi-highlight.pinned .lumi-highlight-tag {
   background: var(--success);
+  box-shadow: 0 4px 12px rgba(52, 211, 153, 0.35);
 }
 
 .lumi-highlight-hint {
   position: absolute;
-  bottom: -24px;
+  bottom: -26px;
   right: -2px;
-  padding: 3px 8px;
+  padding: 4px 9px;
   font-size: 10.5px;
-  color: #cbd5e1;
-  background: rgba(10, 10, 15, 0.85);
+  color: #d4d4de;
+  background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-control);
   white-space: nowrap;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .lumi-highlight-hint kbd {
   font-family: inherit;
   font-size: 10px;
-  padding: 0 4px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
+  padding: 0 5px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
   margin: 0 1px;
+  color: #fff;
+}
+
+/* Keyboard hint is meaningless on touch; double-tap still works. */
+@media (pointer: coarse) {
+  .lumi-highlight-hint {
+    display: none;
+  }
 }
 
 @keyframes lumi-pulse {
-  0%, 100% { box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.1), 0 0 18px rgba(34, 211, 238, 0.3); }
-  50% { box-shadow: 0 0 0 6px rgba(34, 211, 238, 0.18), 0 0 30px rgba(34, 211, 238, 0.5); }
+  0%, 100% { box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.1), 0 0 18px rgba(34, 211, 238, 0.28); }
+  50% { box-shadow: 0 0 0 6px rgba(34, 211, 238, 0.18), 0 0 30px rgba(34, 211, 238, 0.45); }
 }
+
+/* ---------- Re-open chip ---------- */
 
 .lumi-reopen {
   position: fixed;
-  right: 18px;
-  bottom: 18px;
+  right: calc(var(--gap) + var(--safe-r));
+  bottom: calc(var(--gap) + var(--safe-b));
   z-index: 2147483646;
   pointer-events: auto;
   cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px 0 10px;
+  border-radius: var(--r-pill);
   border: 1px solid var(--border);
   background: var(--panel);
   color: #e8e8f0;
   font-family: inherit;
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: transform 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.lumi-reopen::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff 0, var(--focus) 45%, transparent 75%);
+  box-shadow: 0 0 10px var(--focus);
 }
 
 .lumi-reopen:hover {
-  border-color: var(--focus);
+  border-color: rgba(34, 211, 238, 0.5);
   color: var(--focus);
+  transform: translateY(-1px);
 }
+
+.lumi-reopen:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ---------- Mascot widget ---------- */
 
 .lumi-widget {
   position: fixed;
-  right: 18px;
-  bottom: 18px;
-  width: 132px;
-  height: 148px;
+  right: calc(var(--gap) + var(--safe-r));
+  bottom: calc(var(--gap) + var(--safe-b));
+  width: var(--lumi-size);
+  height: calc(var(--lumi-size) + 16px);
   z-index: 2147483646;
   pointer-events: none;
   display: flex;
@@ -125,16 +209,16 @@
 .lumi-widget-close {
   position: absolute;
   top: 0;
-  right: 2px;
-  width: 22px;
-  height: 22px;
+  right: 0;
+  width: 26px;
+  height: 26px;
   padding: 0;
   pointer-events: auto;
   cursor: pointer;
   border: 1px solid var(--border);
   background: var(--panel);
-  color: #cbd5e1;
-  border-radius: 999px;
+  color: #d4d4de;
+  border-radius: var(--r-pill);
   font-size: 15px;
   line-height: 1;
   display: flex;
@@ -142,6 +226,14 @@
   justify-content: center;
   z-index: 2;
   font-family: inherit;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0.85;
+  transition: opacity 160ms ease, background 160ms ease, border-color 160ms ease, transform 120ms ease;
+}
+
+.lumi-widget:hover .lumi-widget-close {
+  opacity: 1;
 }
 
 .lumi-widget-close:hover {
@@ -150,48 +242,65 @@
   border-color: rgba(239, 68, 68, 0.55);
 }
 
+.lumi-widget-close:active {
+  transform: scale(0.94);
+}
+
 .lumi-widget-canvas {
-  width: 132px;
-  height: 132px;
+  width: var(--lumi-size);
+  height: var(--lumi-size);
   pointer-events: auto;
   cursor: pointer;
-  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.35));
-  transition: transform 200ms ease;
+  filter: drop-shadow(0 10px 22px rgba(4, 6, 20, 0.35));
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
 .lumi-widget-canvas:hover {
   transform: translateY(-3px) scale(1.04);
 }
 
+.lumi-widget-canvas:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ---------- Speech bubble ---------- */
+
 .lumi-bubble {
   position: absolute;
-  bottom: 118px;
-  right: 8px;
-  max-width: 220px;
-  padding: 8px 12px;
+  bottom: calc(100% + 6px); /* clears the close button, tail points at Lumi */
+  right: 6px;
+  width: max-content;
+  max-width: min(260px, calc(100vw - var(--gap) * 2 - var(--safe-r)));
+  padding: 9px 12px;
   font-size: 12.5px;
-  line-height: 1.35;
+  line-height: 1.4;
   color: #e8e8f0;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px 12px 4px 12px;
+  border-radius: var(--r-panel) var(--r-panel) 4px var(--r-panel);
   backdrop-filter: blur(12px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow);
   pointer-events: none;
-  animation: lumi-rise 220ms ease-out;
-  white-space: nowrap;
+  animation: lumi-rise 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
-.lumi-bubble.warning { border-color: rgba(245, 158, 11, 0.5); }
-.lumi-bubble.success { border-color: rgba(52, 211, 153, 0.5); }
-.lumi-bubble.thinking { border-color: rgba(167, 139, 250, 0.5); }
+.lumi-bubble.looking { border-color: rgba(34, 211, 238, 0.45); }
+.lumi-bubble.warning { border-color: rgba(245, 158, 11, 0.55); }
+.lumi-bubble.success { border-color: rgba(52, 211, 153, 0.55); }
+.lumi-bubble.thinking { border-color: rgba(167, 139, 250, 0.55); }
+.lumi-bubble.listening { border-color: rgba(244, 114, 182, 0.55); }
 
 @keyframes lumi-rise {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Lumi Preview: per-field ghost overlays */
+/* ---------- Lumi Preview: per-field ghost overlays ---------- */
+
 .lumi-preview-field {
   position: fixed;
   pointer-events: none;
@@ -217,18 +326,21 @@
 
 .lumi-preview-card {
   position: fixed;
-  right: 18px;
-  bottom: 178px;
-  width: 300px;
+  right: calc(var(--gap) + var(--safe-r));
+  bottom: calc(var(--lumi-size) + var(--gap) * 2 + 14px + var(--safe-b));
+  width: min(320px, calc(100vw - var(--gap) * 2 - var(--safe-r)));
+  max-height: calc(100vh - var(--lumi-size) - var(--gap) * 3 - 14px - var(--safe-b));
+  overflow-y: auto;
   padding: 14px;
   background: var(--panel);
   border: 1px solid rgba(245, 158, 11, 0.4);
-  border-radius: 14px;
+  border-radius: var(--r-panel);
   backdrop-filter: blur(14px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 16px 40px rgba(4, 6, 20, 0.5);
   z-index: 2147483646;
   pointer-events: auto;
-  animation: lumi-rise 220ms ease-out;
+  animation: lumi-rise 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .lumi-preview-card.high {
@@ -245,40 +357,43 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .lumi-preview-card.high .lumi-preview-title { color: var(--danger); }
 
 .lumi-preview-risk {
   font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 999px;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
   border: 1px solid currentColor;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
 }
 
 .lumi-preview-row {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 6px 0;
+  padding: 7px 0;
   border-top: 1px solid var(--border);
   font-size: 12.5px;
 }
 
-.lumi-preview-row .label { color: #8a8a9a; font-size: 11px; }
-.lumi-preview-row .value { color: #e8e8f0; }
+.lumi-preview-row .label { color: var(--muted); font-size: 11px; }
+.lumi-preview-row .value { color: #e8e8f0; overflow-wrap: anywhere; }
 .lumi-preview-row .value .old { color: #6b6b7a; text-decoration: line-through; margin-right: 6px; }
 
 .lumi-preview-note {
   font-size: 11.5px;
-  color: #a1a1b0;
+  color: #b4b4c2;
   margin: 8px 0 10px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .lumi-preview-locked {
   font-size: 11px;
-  color: #8a8a9a;
+  color: var(--muted);
   margin-bottom: 8px;
 }
 
@@ -290,22 +405,25 @@
 
 .lumi-btn {
   flex: 1;
+  min-height: 36px;
   padding: 8px 10px;
   font-size: 12.5px;
   font-weight: 600;
-  border-radius: 9px;
+  border-radius: var(--r-control);
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.05);
   color: #e8e8f0;
   cursor: pointer;
   font-family: inherit;
+  transition: background 140ms ease, transform 120ms ease, filter 140ms ease;
 }
 
 .lumi-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.lumi-btn:active { transform: scale(0.98); }
 
 .lumi-btn.primary {
   background: var(--warn);
-  color: #0a0a0f;
+  color: var(--ink);
   border-color: transparent;
 }
 
@@ -320,6 +438,7 @@
 .lumi-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
 }
 
 .lumi-confirm-check {
@@ -327,13 +446,102 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #cbd5e1;
+  color: #d4d4de;
   margin: 8px 0 4px;
   cursor: pointer;
 }
 
 .lumi-confirm-check input {
   accent-color: var(--danger);
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
+}
+
+/* ---------- Responsive ---------- */
+
+/* Phones: tighter gutter, smaller mascot, bigger touch targets, bubble spans the width. */
+@media (max-width: 480px) {
+  :host {
+    --gap: 12px;
+    --lumi-size: 92px;
+  }
+
+  .lumi-widget-close {
+    width: 32px;
+    height: 32px;
+    font-size: 17px;
+    opacity: 1;
+  }
+
+  .lumi-bubble {
+    right: 0;
+    max-width: calc(100vw - var(--gap) * 2 - var(--safe-r));
+    font-size: 13px;
+  }
+
+  .lumi-preview-card {
+    width: calc(100vw - var(--gap) * 2 - var(--safe-r));
+  }
+
+  .lumi-preview-actions {
+    flex-direction: column;
+  }
+
+  .lumi-btn {
+    min-height: 44px;
+  }
+}
+
+/* Short landscape phones: keep the preview from covering the whole viewport. */
+@media (max-height: 480px) {
+  :host {
+    --lumi-size: 84px;
+  }
+
+  .lumi-preview-card {
+    max-height: calc(100vh - var(--gap) * 2);
+    bottom: var(--gap);
+    right: calc(var(--lumi-size) + var(--gap) * 2 + var(--safe-r));
+  }
+}
+
+/* Touch: hover states never fire, so keep controls fully visible. */
+@media (hover: none) {
+  .lumi-widget-close {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lumi-highlight,
+  .lumi-bubble,
+  .lumi-preview-card {
+    animation: none;
+  }
+
+  .lumi-widget-canvas,
+  .lumi-reopen,
+  .lumi-widget-close,
+  .lumi-btn {
+    transition: none;
+  }
+
+  .lumi-widget-canvas:hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :host {
+    --panel: var(--panel-solid);
+  }
+
+  .lumi-bubble,
+  .lumi-preview-card,
+  .lumi-reopen,
+  .lumi-widget-close,
+  .lumi-highlight-hint {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }

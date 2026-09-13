@@ -29,10 +29,12 @@ export function LumiMascot({ state, target, size, cursorFallback = true, classNa
         gl={{ alpha: true, antialias: true, powerPreference: 'low-power' }}
         style={{ background: 'transparent' }}
       >
-        <ambientLight intensity={0.9} />
-        <hemisphereLight args={['#ffffff', '#1e1b4b', 0.6]} />
-        <directionalLight position={[2, 3, 2]} intensity={1.6} />
-        <directionalLight position={[-2, 1, -1]} intensity={0.6} color="#a5f3fc" />
+        {/* Three-point rig: key, cool fill, and a strong rim so the silhouette holds on white pages */}
+        <ambientLight intensity={0.7} />
+        <hemisphereLight args={['#ffffff', '#1e1b4b', 0.5]} />
+        <directionalLight position={[2, 3, 2]} intensity={1.5} />
+        <directionalLight position={[-2, 1, -1]} intensity={0.5} color="#a5f3fc" />
+        <directionalLight position={[0, 1.2, -3]} intensity={2.4} color="#67e8f9" />
         <LumiBody state={state} lookRef={lookRef} />
       </Canvas>
     </div>

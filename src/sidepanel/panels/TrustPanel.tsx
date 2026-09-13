@@ -39,7 +39,7 @@ export function TrustPanel() {
       <span className="lumi-label">Lumi Trust</span>
       <p className="mb-2 mt-1 text-xs text-lumi-muted">Every action is risk-classified in code. Lumi previews before it acts.</p>
 
-      <div className="mb-3 grid grid-cols-3 gap-1 text-center text-[10px]">
+      <div className="mb-3 grid grid-cols-3 gap-1.5 text-center text-[10px]">
         <div className="rounded-md border border-lumi-success/30 py-1 text-lumi-success">
           LOW
           <br />
@@ -57,7 +57,7 @@ export function TrustPanel() {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
         <button className="lumi-btn flex-1" onClick={() => run('fill')} disabled={busy !== null || !!pending}>
           {busy === 'fill' ? 'Reading form…' : 'Fill form from memory'}
         </button>
@@ -74,7 +74,7 @@ export function TrustPanel() {
             <span className={`lumi-chip ${RISK_STYLE[pendingAction.risk]}`}>{pendingAction.risk}</span>
           </div>
           <p className="mt-1 text-[11px] text-lumi-muted">
-            {pendingAction.risk === 'high' ? 'Lumi is waiting for explicit approval on the page.' : `Preview shown on the page — ${pending.changes.length} field(s).`}
+            {pendingAction.risk === 'high' ? 'Lumi is waiting for explicit approval on the page.' : `Preview shown on the page: ${pending.changes.length} field(s).`}
           </p>
           <div className="mt-2 flex gap-1">
             <button className="lumi-btn !py-1 !px-2" onClick={() => sendMessage({ type: 'REJECT_ACTION', actionId: pending.actionId })}>

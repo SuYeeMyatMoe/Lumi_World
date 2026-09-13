@@ -124,7 +124,7 @@ function MemoryCard({
         </div>
       )}
 
-      <div className="mt-2 flex items-center gap-1 opacity-70 transition group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+      <div className="mt-2 flex flex-wrap items-center gap-1 opacity-80 transition group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
         <button className="lumi-btn !py-0.5 !px-2 !text-[11px]" onClick={onScore} disabled={scoring}>
           {scoring ? 'Scoring…' : s ? 'Re-score' : 'Score vs mission'}
         </button>

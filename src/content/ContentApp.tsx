@@ -48,7 +48,7 @@ export function ContentApp({ shadowHost }: Props) {
   const pin = useCallback(async (el: Element) => {
     const snapshot = createSnapshot(el);
     if (!snapshot) {
-      setLocalBubble("I won't touch that — it looks sensitive.");
+      setLocalBubble("I won't touch that. It looks sensitive.");
       setTimeout(() => setLocalBubble(null), 2200);
       return;
     }
