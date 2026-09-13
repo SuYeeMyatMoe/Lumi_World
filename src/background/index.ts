@@ -5,12 +5,15 @@ import type { RuntimeMessage, RuntimeResponseMap } from '../shared/types/message
 import type { LumiFocusSnapshot } from '../shared/types/lumiFocus';
 import type { CompareResult } from '../shared/types/compare';
 import type { LumiPreview } from '../shared/types/lumiPreview';
+import type { Mandate, Mission } from '../shared/types/mission';
 import { LUMI_MEMORY_CAP } from '../shared/types/lumiMemory';
 import { LUMI_VOICE, uid } from '../shared/constants';
 import { callTool } from './openaiClient';
-import { compareResultSchema, formFillSchema, scoreResultSchema } from './toolSchemas';
+import { compareResultSchema, formFillSchema, mandateSchema, scoreResultSchema } from './toolSchemas';
 import { flashSuccess, setAgentState, setFocusPos, settleToIdle } from './agentState';
 import { createAction, findAction, updateActionStatus } from './actionLog';
+import { checkMandate } from '../shared/riskClassifier';
+import { parseAmountLoose, parsePrice } from '../shared/dom/price';
 import { showOverlay } from '../shared/overlayVisibility';
 
 // Content scripts are "untrusted contexts" for storage.session; grant access so the
@@ -36,9 +39,37 @@ function describeObject(o: LumiFocusSnapshot, tag: string): string {
     .join('\n');
 }
 
+function describeMandate(mandate: Mandate | undefined): string | null {
+  if (!mandate) return null;
+  const parts: string[] = [];
+  if (mandate.mustHave.length > 0) parts.push(`must have ${mandate.mustHave.join(', ')}`);
+  if (mandate.ceiling !== null) parts.push(`never above ${mandate.currency ?? ''}${mandate.ceiling}`);
+  if (mandate.walkAway !== null) parts.push(`walk away above ${mandate.currency ?? ''}${mandate.walkAway}`);
+  return parts.length > 0 ? `Mandate (hard limits, enforced in code): ${parts.join('; ')}` : null;
+}
+
 async function missionContext(): Promise<string> {
   const mission = await getLocal('mission');
-  return mission?.goal ? `Mission: ${mission.goal}` : 'Mission: (none set — judge on general usefulness and value)';
+  if (!mission?.goal) return 'Mission: (none set — judge on general usefulness and value)';
+  return [`Mission: ${mission.goal}`, describeMandate(mission.mandate)].filter(Boolean).join('\n');
+}
+
+// Which remembered object is this fill actually about? Match a proposed value against a
+// remembered label (either direction, so "ASUS TUF A15" matches "ASUS TUF Gaming A15"),
+// then fall back to the best mission score, then to a single unambiguous memory.
+function findMandateSubject(values: string[], items: LumiFocusSnapshot[]): LumiFocusSnapshot | null {
+  for (const raw of values) {
+    const value = raw.trim().toLowerCase();
+    if (value.length < 3) continue;
+    const hit = items.find((o) => {
+      const label = (o.extracted.label ?? '').trim().toLowerCase();
+      return label.length >= 3 && (label.includes(value) || value.includes(label));
+    });
+    if (hit) return hit;
+  }
+  const scored = items.filter((o) => o.missionScore).sort((a, b) => (b.missionScore?.score ?? 0) - (a.missionScore?.score ?? 0));
+  if (scored.length > 0) return scored[0];
+  return items.length === 1 ? items[0] : null;
 }
 
 async function activeTabId(): Promise<number | null> {
@@ -79,9 +110,44 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     return { ok: true, data: snapshot };
   },
 
-  // Stub — filled in by the Mandate layer (CLAUDE.md 4.1).
-  async PARSE_MISSION() {
-    return { ok: false, code: 'UNKNOWN', error: 'not implemented' };
+  // Turns a plain-language goal into a mandate. The goal is always stored, even when the
+  // model call fails, so a missing key costs the mandate but never the mission itself.
+  async PARSE_MISSION(msg) {
+    const goal = msg.goal.trim();
+    if (!goal) return { ok: false, code: 'UNKNOWN', error: 'Set a goal first.' };
+
+    const existing = await getLocal('mission');
+    const base: Mission = {
+      id: existing?.id ?? uid('mission'),
+      goal,
+      createdAt: existing?.createdAt ?? Date.now(),
+      status: 'active',
+    };
+
+    await setAgentState('thinking', LUMI_VOICE.thinking);
+    const result = await callTool({
+      tool: 'parseMandate',
+      schema: mandateSchema,
+      userContent: `Extract the hard constraints from this mission.\n\nMission: ${goal}`,
+    });
+
+    if (!result.ok) {
+      await setLocal('mission', base);
+      await setAgentState('warning', result.code === 'NO_API_KEY' ? LUMI_VOICE.noKey : LUMI_VOICE.uncertain);
+      setTimeout(() => settleToIdle(), 3000);
+      return { ok: true, data: base };
+    }
+
+    const mandate: Mandate = {
+      mustHave: result.data.mustHave,
+      ceiling: result.data.ceiling ?? null,
+      currency: result.data.currency ?? null,
+      walkAway: result.data.walkAway ?? null,
+    };
+    const mission: Mission = { ...base, mandate };
+    await setLocal('mission', mission);
+    await flashSuccess(LUMI_VOICE.done);
+    return { ok: true, data: mission };
   },
 
   async REQUEST_COMPARE(msg) {
@@ -178,6 +244,27 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
       await setAgentState('warning', LUMI_VOICE.uncertain);
       setTimeout(() => settleToIdle(), 2500);
       return { ok: false, code: 'UNKNOWN', error: "Lumi couldn't confidently map any remembered data to this form." };
+    }
+
+    // Mandate gate. Runs on the object the fill is about, then on every value that is
+    // itself an amount. Deterministic and model-free: the refusal is a property of the code.
+    const mission = await getLocal('mission');
+    const subject = findMandateSubject(changes.map((c) => c.proposedValue), mem.items);
+    const subjectPrice = subject ? parsePrice(subject.extracted.price) ?? parsePrice(subject.text) : null;
+    const checks: { input: Parameters<typeof checkMandate>[0]; label: string }[] = [];
+    if (subject) checks.push({ input: { price: subjectPrice, text: subject.text }, label: subject.extracted.label ?? 'that one' });
+    for (const change of changes) {
+      const amount = parseAmountLoose(change.proposedValue);
+      if (amount !== null) checks.push({ input: { price: amount }, label: change.label });
+    }
+
+    for (const check of checks) {
+      const verdict = checkMandate(check.input, mission);
+      if (verdict.ok) continue;
+      await createAction('fill-form', `Refused to fill: ${check.label}`, { tabId }, 'refused');
+      await setAgentState('warning', verdict.reason || LUMI_VOICE.refused);
+      setTimeout(() => settleToIdle(), 3000);
+      return { ok: false, code: 'REFUSED', error: verdict.reason };
     }
 
     const action = await createAction('fill-form', `Fill ${changes.length} field${changes.length === 1 ? '' : 's'}`, { tabId });

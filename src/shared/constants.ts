@@ -25,6 +25,7 @@ export const LUMI_VOICE = {
   done: 'Done.',
   thinking: 'Thinking…',
   noKey: 'Set your OpenAI key in Options so I can reason.',
+  refused: "That's above my mandate. I'll stop before that one.",
 } as const;
 
 export function uid(prefix = 'lumi'): string {

@@ -19,9 +19,20 @@ export const formFillSchema = z.object({
   rationale: z.string(),
 });
 
+// nullish() not nullable(): models sometimes omit a field rather than send null.
+// The handler normalises undefined to null so the stored mandate is always complete.
+export const mandateSchema = z.object({
+  goal: z.string(),
+  mustHave: z.array(z.string()),
+  ceiling: z.number().nullish(),
+  currency: z.string().nullish(),
+  walkAway: z.number().nullish(),
+});
+
 export type CompareToolResult = z.infer<typeof compareResultSchema>;
 export type ScoreToolResult = z.infer<typeof scoreResultSchema>;
 export type FormFillToolResult = z.infer<typeof formFillSchema>;
+export type MandateToolResult = z.infer<typeof mandateSchema>;
 
 export const TOOLS = {
   compareLumiFocusObjects: {
@@ -56,6 +67,30 @@ export const TOOLS = {
           matchedConstraints: { type: 'array', items: { type: 'string' }, description: 'Constraints from the mission this object satisfies or violates, prefixed with ✓ or ⚠' },
         },
         required: ['score', 'verdict', 'matchedConstraints'],
+        additionalProperties: false,
+      },
+    },
+  },
+  parseMandate: {
+    type: 'function' as const,
+    function: {
+      name: 'parseMandate',
+      description:
+        'Extract the hard constraints from a plain-language mission so they can be enforced in code. Extract only limits the user actually stated; use null when they did not state one. Never invent a budget.',
+      parameters: {
+        type: 'object',
+        properties: {
+          goal: { type: 'string', description: 'The mission restated in one clear sentence' },
+          mustHave: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Non-negotiable requirements as short searchable phrases, e.g. "16 GB RAM". Empty if none were stated.',
+          },
+          ceiling: { type: ['number', 'null'], description: 'Maximum price the user will pay, as a plain number without currency or separators. Null if unstated.' },
+          currency: { type: ['string', 'null'], description: 'Currency code or symbol the user used, e.g. "RM". Null if unstated.' },
+          walkAway: { type: ['number', 'null'], description: 'Price above which the user said to walk away. Null if unstated; often equal to the ceiling.' },
+        },
+        required: ['goal', 'mustHave', 'ceiling', 'currency', 'walkAway'],
         additionalProperties: false,
       },
     },
