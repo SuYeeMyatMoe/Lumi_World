@@ -1,6 +1,6 @@
-// Dev-only: mounts the content overlay on the demo page (npm run dev → /demo/index.html)
-// with the chrome.* shim, so the focus engine and mini mascot work without the unpacked
-// extension. Background-dependent features report "not available".
+// Dev-only: mounts the content overlay on the demo page when the unpacked extension
+// is not already injecting. Wait briefly so the real content script can win on
+// localhost — otherwise the demo shim shows Lumi here while other websites stay empty.
 import { installDevShim } from '../shared/devShim';
 
 const HOST_ID = 'lumi-world-host';
@@ -9,7 +9,8 @@ function isDemoPage(): boolean {
   return /\/demo\/index\.html$/i.test(location.pathname) || location.search.includes('preview=1');
 }
 
-if (isDemoPage() && !document.getElementById(HOST_ID)) {
+function mountDemoPreview() {
+  if (document.getElementById(HOST_ID)) return;
   installDevShim();
   const rt = (chrome as unknown as { runtime: { sendMessage: (m: unknown, cb?: (r: unknown) => void) => void } }).runtime;
   rt.sendMessage = (msg: unknown, cb?: (r: unknown) => void) => {
@@ -41,5 +42,9 @@ if (isDemoPage() && !document.getElementById(HOST_ID)) {
     }
     cb?.({ ok: false, code: 'UNKNOWN', error: 'Dev preview: background not available.' });
   };
-  void chrome.storage.local.set({ overlayVisible: true }).then(() => import('./index'));
+  void import('./index');
+}
+
+if (isDemoPage()) {
+  window.setTimeout(mountDemoPreview, 400);
 }

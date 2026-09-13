@@ -3,7 +3,7 @@ import { LumiMascot } from '../mascot/LumiMascot';
 import { useAgentState } from '../mascot/useAgentState';
 import type { MascotTarget } from '../mascot/useLookAt';
 import { useLocalStorage } from '../shared/storage/useChromeStorage';
-import { setLocal } from '../shared/storage/storage';
+import { hideOverlay, isOverlayHidden, showOverlay } from '../shared/overlayVisibility';
 import { sendMessage } from '../shared/messaging/sendMessage';
 import { createSnapshot } from '../shared/dom/elementSnapshot';
 import { startFocusEngine } from './focusEngine';
@@ -17,7 +17,8 @@ interface Props {
 
 export function ContentApp({ shadowHost }: Props) {
   const live = useAgentState();
-  const overlayVisible = useLocalStorage('overlayVisible');
+  const hiddenOrigins = useLocalStorage('hiddenOrigins');
+  const overlayVisible = !isOverlayHidden(hiddenOrigins);
   const pendingPreview = useLocalStorage('pendingPreview');
   const actionLog = useLocalStorage('actionLog');
   const [hoverTarget, setHoverTarget] = useState<Element | null>(null);
@@ -113,12 +114,12 @@ export function ContentApp({ shadowHost }: Props) {
   const snapshotLabel = useMemo(() => (hoverTarget ? createSnapshot(hoverTarget)?.extracted.label?.slice(0, 32) : undefined), [hoverTarget]);
 
   const closeLumi = useCallback(() => {
-    void setLocal('overlayVisible', false);
+    void hideOverlay();
     void sendMessage({ type: 'FOCUS_HOVER', pos: null });
   }, []);
 
   const openLumi = useCallback(() => {
-    void setLocal('overlayVisible', true);
+    void showOverlay();
   }, []);
 
   if (!overlayVisible) {

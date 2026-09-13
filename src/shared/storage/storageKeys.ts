@@ -13,7 +13,7 @@ export interface LocalStorageSchema {
   actionLog: AgentAction[];
   compareResults: CompareResult[];
   pendingPreview: LumiPreview | null;
-  overlayVisible: boolean;
+  hiddenOrigins: string[];
 }
 
 export interface SessionStorageSchema {

@@ -11,10 +11,14 @@ import { callTool } from './openaiClient';
 import { compareResultSchema, formFillSchema, scoreResultSchema } from './toolSchemas';
 import { flashSuccess, setAgentState, setFocusPos, settleToIdle } from './agentState';
 import { createAction, findAction, updateActionStatus } from './actionLog';
+import { showOverlay } from '../shared/overlayVisibility';
 
 // Content scripts are "untrusted contexts" for storage.session; grant access so the
 // mini mascot can read liveAgentState without round-tripping through messaging.
 chrome.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' }).catch(() => {});
+
+// Recover from the old global overlayVisible flag, which hid Lumi on every site.
+void chrome.storage.local.remove('overlayVisible');
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
@@ -240,6 +244,14 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
   },
 
   async OPEN_SIDE_PANEL(_msg, sender) {
+    const url = sender.tab?.url;
+    if (url) {
+      try {
+        await showOverlay(new URL(url).origin);
+      } catch {
+        /* chrome:// and other non-http tabs */
+      }
+    }
     const windowId = sender.tab?.windowId;
     if (windowId !== undefined) {
       await chrome.sidePanel.open({ windowId }).catch(() => {});

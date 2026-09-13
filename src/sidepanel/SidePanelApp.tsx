@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocalStorage } from '../shared/storage/useChromeStorage';
-import { setLocal } from '../shared/storage/storage';
+import { hideOverlay, isOverlayHidden, showOverlay } from '../shared/overlayVisibility';
 import { BRAND } from '../shared/constants';
 import { LumiMascotFull } from './LumiMascotFull';
 import { MissionPanel } from './panels/MissionPanel';
@@ -8,15 +8,44 @@ import { MemoryPanel } from './panels/MemoryPanel';
 import { ComparePanel } from './panels/ComparePanel';
 import { TrustPanel } from './panels/TrustPanel';
 
+function tabOrigin(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).origin;
+  } catch {
+    return null;
+  }
+}
+
 export function SidePanelApp() {
   const settings = useLocalStorage('lumiSettings');
-  const overlayVisible = useLocalStorage('overlayVisible');
+  const hiddenOrigins = useLocalStorage('hiddenOrigins');
   const memory = useLocalStorage('lumiMemory');
   const [selected, setSelected] = useState<string[]>([]);
+  const [pageOrigin, setPageOrigin] = useState<string | null>(null);
 
-  // Opening Lumi Space brings the page mascot back.
   useEffect(() => {
-    void setLocal('overlayVisible', true);
+    const readOrigin = () => {
+      if (!chrome.tabs?.query) return;
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, ([tab]) => {
+        setPageOrigin(tabOrigin(tab?.url));
+      });
+    };
+    readOrigin();
+    chrome.tabs.onActivated?.addListener(readOrigin);
+    chrome.tabs.onUpdated?.addListener(readOrigin);
+    return () => {
+      chrome.tabs.onActivated?.removeListener(readOrigin);
+      chrome.tabs.onUpdated?.removeListener(readOrigin);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!chrome.tabs?.query) return;
+    chrome.tabs.query({ active: true, lastFocusedWindow: true }, ([tab]) => {
+      const origin = tabOrigin(tab?.url);
+      if (origin) void showOverlay(origin);
+    });
   }, []);
 
   // Drop selections for objects that were forgotten.
@@ -32,6 +61,7 @@ export function SidePanelApp() {
   };
 
   const hasKey = settings.openaiApiKey.trim().length > 0;
+  const overlayVisible = pageOrigin ? !isOverlayHidden(hiddenOrigins, pageOrigin) : true;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -43,8 +73,12 @@ export function SidePanelApp() {
         <div className="flex items-center gap-1.5">
           <button
             className="lumi-btn !py-1 !px-2"
-            onClick={() => void setLocal('overlayVisible', !overlayVisible)}
-            title={overlayVisible ? 'Hide Lumi on pages' : 'Show Lumi on pages'}
+            disabled={!pageOrigin}
+            onClick={() => {
+              if (!pageOrigin) return;
+              void (overlayVisible ? hideOverlay(pageOrigin) : showOverlay(pageOrigin));
+            }}
+            title={overlayVisible ? 'Hide Lumi on this site' : 'Show Lumi on this site'}
           >
             {overlayVisible ? 'Hide' : 'Show'}
           </button>
@@ -57,11 +91,11 @@ export function SidePanelApp() {
       <main className="flex flex-1 flex-col gap-3 p-3">
         <LumiMascotFull />
 
-        {!overlayVisible && (
+        {!overlayVisible && pageOrigin && (
           <div className="rounded-lg border border-lumi-border bg-black/20 p-2.5 text-[11.5px]">
-            <p className="font-semibold">Lumi is closed on pages</p>
-            <p className="mt-0.5 text-lumi-muted">It will stay hidden until you click Show or the Lumi toolbar icon.</p>
-            <button className="lumi-btn-primary mt-2 !py-1 !px-2" onClick={() => void setLocal('overlayVisible', true)}>
+            <p className="font-semibold">Lumi is closed on this site</p>
+            <p className="mt-0.5 text-lumi-muted">Other websites are unchanged. Click Show to bring it back here.</p>
+            <button className="lumi-btn-primary mt-2 !py-1 !px-2" onClick={() => void showOverlay(pageOrigin)}>
               Show Lumi
             </button>
           </div>

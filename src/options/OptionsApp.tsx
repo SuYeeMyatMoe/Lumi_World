@@ -121,7 +121,7 @@ export function OptionsApp() {
           <li>
             <kbd className="rounded border border-lumi-border px-1">Alt</kbd>+click to remember it (Lumi Memory).
           </li>
-          <li>Close Lumi with the × on the mascot. Click the toolbar icon or Show in the side panel to bring it back.</li>
+          <li>Close Lumi with the × on the mascot to hide it on this site. Other websites keep Lumi. Click the Lumi chip or the toolbar icon to bring it back.</li>
           <li>Open the side panel, set a Mission, select two objects and compare.</li>
           <li>On a form, ask Lumi to fill it — you'll see a Lumi Preview before anything is written.</li>
         </ol>
