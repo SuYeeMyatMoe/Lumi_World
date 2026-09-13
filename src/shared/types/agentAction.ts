@@ -5,6 +5,7 @@ export type ActionType =
   | 'read'
   | 'fill-form'
   | 'send-offer'
+  | 'accept-deal'
   | 'submit'
   | 'delete'
   | 'navigate-payment'

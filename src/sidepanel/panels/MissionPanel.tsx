@@ -1,27 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useLocalStorage } from '../../shared/storage/useChromeStorage';
 import { setLocal } from '../../shared/storage/storage';
-import { uid } from '../../shared/constants';
-
-const EXAMPLES = [
-  'Find a laptop under RM4,000 for machine learning and university.',
-  'Pick a camera under RM9,000 for travel and low-light video.',
-  'Help me submit my hackathon project correctly.',
-];
+import { sendMessage } from '../../shared/messaging/sendMessage';
+import type { Mandate } from '../../shared/types/mission';
+import { MissionSuggestions } from './MissionSuggestions';
 
 export function MissionPanel() {
   const mission = useLocalStorage('mission');
   const [draft, setDraft] = useState('');
   const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (mission && !editing) setDraft(mission.goal);
   }, [mission, editing]);
 
+  // The background parses the goal into a mandate and stores the mission, so the
+  // limits Lumi will enforce are set in the same action that sets the goal.
   const save = async () => {
     const goal = draft.trim();
     if (!goal) return;
-    await setLocal('mission', { id: mission?.id ?? uid('mission'), goal, createdAt: mission?.createdAt ?? Date.now(), status: 'active' });
+    setBusy(true);
+    await sendMessage({ type: 'PARSE_MISSION', goal });
+    setBusy(false);
     setEditing(false);
   };
 
@@ -46,7 +47,12 @@ export function MissionPanel() {
           </div>
         </div>
         <p className="text-sm leading-snug">{mission.goal}</p>
-        <p className="mt-2 text-[11px] text-lumi-muted">Every object you remember is judged against this.</p>
+        <MandateChips mandate={mission.mandate} />
+        <p className="mt-2 text-[11px] text-lumi-muted">
+          {mission.mandate
+            ? 'Limits are enforced in code. Lumi refuses rather than exceeds them.'
+            : 'Every object you remember is judged against this.'}
+        </p>
       </section>
     );
   }
@@ -62,8 +68,8 @@ export function MissionPanel() {
         onChange={(e) => setDraft(e.target.value)}
       />
       <div className="mt-2 flex items-center gap-2">
-        <button className="lumi-btn-mission" onClick={save} disabled={!draft.trim()}>
-          Set mission
+        <button className="lumi-btn-mission" onClick={save} disabled={busy || !draft.trim()}>
+          {busy ? 'Reading your limits…' : 'Set mission'}
         </button>
         {mission && (
           <button className="lumi-btn" onClick={() => setEditing(false)}>
@@ -71,15 +77,31 @@ export function MissionPanel() {
           </button>
         )}
       </div>
-      {!mission && (
-        <div className="mt-3 flex flex-col gap-1">
-          {EXAMPLES.map((ex) => (
-            <button key={ex} className="text-left text-[11px] text-lumi-muted hover:text-lumi-text" onClick={() => setDraft(ex)}>
-              → {ex}
-            </button>
-          ))}
-        </div>
-      )}
+      {!mission && <MissionSuggestions onPick={setDraft} />}
     </section>
+  );
+}
+
+// The mandate made visible: what Lumi must find, and the number it will not cross.
+function MandateChips({ mandate }: { mandate?: Mandate }) {
+  if (!mandate) return null;
+  const money = (value: number) => `${mandate.currency ?? ''}${value.toLocaleString('en-MY', { maximumFractionDigits: 2 })}`;
+  const hasAny = mandate.mustHave.length > 0 || mandate.ceiling !== null || mandate.walkAway !== null;
+  if (!hasAny) return null;
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1">
+      {mandate.mustHave.map((item) => (
+        <span key={item} className="lumi-chip border-lumi-focus/40 text-lumi-focus">
+          must have · {item}
+        </span>
+      ))}
+      {mandate.ceiling !== null && (
+        <span className="lumi-chip border-lumi-mission/40 text-lumi-mission">ceiling · {money(mandate.ceiling)}</span>
+      )}
+      {mandate.walkAway !== null && (
+        <span className="lumi-chip border-lumi-danger/40 text-lumi-danger">walk away · {money(mandate.walkAway)}</span>
+      )}
+    </div>
   );
 }

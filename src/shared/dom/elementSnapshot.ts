@@ -1,11 +1,11 @@
 import type { LumiFocusSnapshot } from '../types/lumiFocus';
 import { buildSelector } from './selector';
 import { isSensitiveField } from './sensitiveFieldGuard';
+import { findPriceText } from './price';
 
 export type PartialSnapshot = Omit<LumiFocusSnapshot, 'id' | 'createdAt' | 'tabId' | 'tabUrl' | 'tabTitle'>;
 
 const MAX_TEXT = 600;
-const PRICE_PATTERN = /(?:RM|MYR|USD|US\$|\$|€|£|¥|SGD|S\$)\s?\d[\d,]*(?:\.\d{1,2})?|\d[\d,]*(?:\.\d{1,2})?\s?(?:RM|MYR|USD|SGD)/i;
 
 const INLINE_TAGS = new Set(['SPAN', 'B', 'STRONG', 'I', 'EM', 'SMALL', 'A', 'LABEL', 'SVG', 'PATH', 'IMG']);
 const CARD_TAGS = new Set(['ARTICLE', 'LI', 'TR', 'FIGURE']);
@@ -72,7 +72,7 @@ export function createSnapshot(el: Element): PartialSnapshot | null {
   if (name) attributes.name = name;
   if (title) attributes.title = title;
 
-  const priceMatch = text.match(PRICE_PATTERN);
+  const priceMatch = findPriceText(text);
   const heading = el.querySelector('h1, h2, h3, h4, h5, h6, [role="heading"]')?.textContent?.replace(/\s+/g, ' ').trim();
   const firstLine =
     (heading && heading.length <= 120 ? heading : undefined) ??
@@ -87,7 +87,7 @@ export function createSnapshot(el: Element): PartialSnapshot | null {
     boundingRect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
     extracted: {
       label: firstLine ?? ariaLabel ?? alt ?? undefined,
-      price: priceMatch?.[0],
+      price: priceMatch ?? undefined,
     },
   };
 }
