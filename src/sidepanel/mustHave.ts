@@ -1,4 +1,14 @@
-// Tolerant must-have matching for the orchestrator.
+// Must-have reporting for the orchestrator.
+//
+// The VERDICT comes from shared/riskClassifier.meetsRequirement, so the panel and the
+// guard can never disagree about the same card. What lives here is the breakdown: which
+// parts of a requirement were looked for and which were not found, for the bubble and
+// the log. An earlier version decided the verdict here as well, which meant two
+// implementations of one rule, already diverging on text that states a size with no
+// memory word at all.
+import { meetsRequirement } from '../shared/riskClassifier';
+
+// Original note, kept because it explains the tolerance:
 //
 // A mandate says "16 GB RAM"; the card says "16 GB DDR5 (upgradeable)". A literal
 // substring test refuses both, and every other card too — which is exactly what a live
@@ -82,7 +92,10 @@ export function matchesRequirement(requirement: string, text: string): Requireme
   // over a requirement we cannot actually check would be worse than letting it through.
   if (checked === 0) return { requirement, ok: true, missing: [], checked: 0 };
 
-  return { requirement, ok: missing.length === 0, missing, checked };
+  const ok = meetsRequirement(text, requirement);
+  // Keep the breakdown honest against the verdict that actually governs.
+  if (ok) return { requirement, ok: true, missing: [], checked };
+  return { requirement, ok: false, missing: missing.length > 0 ? missing : [normalise(requirement)], checked };
 }
 
 /** The first requirement this text fails, or null when it satisfies all of them. */
