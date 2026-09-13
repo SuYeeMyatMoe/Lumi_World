@@ -40,13 +40,46 @@ export function ComparePanel({ selected }: Props) {
       </button>
       {error && <p className="mt-2 text-[11px] text-lumi-warn">{error}</p>}
 
-      {latest && latestA && latestB && <CompareCard result={latest} labelA={latestA.extracted.label ?? 'A'} labelB={latestB.extracted.label ?? 'B'} />}
+      {latest && latestA && latestB && (
+        <CompareCard
+          result={latest}
+          labelA={latestA.extracted.label ?? 'A'}
+          labelB={latestB.extracted.label ?? 'B'}
+          winnerId={latest.winner === 'B' ? latest.objectBId : latest.objectAId}
+          winnerIsTie={latest.winner === 'tie'}
+        />
+      )}
     </section>
   );
 }
 
-function CompareCard({ result, labelA, labelB }: { result: CompareResult; labelA: string; labelB: string }) {
+function CompareCard({
+  result,
+  labelA,
+  labelB,
+  winnerId,
+  winnerIsTie,
+}: {
+  result: CompareResult;
+  labelA: string;
+  labelB: string;
+  winnerId: string;
+  winnerIsTie: boolean;
+}) {
   const winnerLabel = result.winner === 'A' ? labelA : result.winner === 'B' ? labelB : 'Tie';
+  const [negotiating, setNegotiating] = useState(false);
+  const [negotiateError, setNegotiateError] = useState<string | null>(null);
+
+  // Starts the negotiation on the winner. A mandate refusal comes back as an error here
+  // and is shown in place, so the reason is visible in the panel as well as on the page.
+  const negotiate = async () => {
+    setNegotiating(true);
+    setNegotiateError(null);
+    const r = await sendMessage({ type: 'REQUEST_OFFER', objectId: winnerId });
+    if (!r.ok) setNegotiateError(r.error);
+    setNegotiating(false);
+  };
+
   return (
     <div className="lumi-raised mt-3 p-3">
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
@@ -65,6 +98,15 @@ function CompareCard({ result, labelA, labelB }: { result: CompareResult; labelA
             </li>
           ))}
         </ul>
+
+        {!winnerIsTie && (
+          <>
+            <button className="lumi-btn-primary mt-3 w-full" onClick={negotiate} disabled={negotiating}>
+              {negotiating ? 'Lumi is drafting an offer…' : 'Negotiate this one'}
+            </button>
+            {negotiateError && <p className="mt-2 text-[11px] text-lumi-warn">{negotiateError}</p>}
+          </>
+        )}
       </div>
     </div>
   );

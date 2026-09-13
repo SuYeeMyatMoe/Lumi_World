@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 interface Props {
   target: Element | null;
   pinned: boolean;
+  /** Lumi is acting on this element right now. */
+  working?: boolean;
   label?: string;
 }
 
@@ -13,7 +15,7 @@ interface Box {
   height: number;
 }
 
-export function HighlightOverlay({ target, pinned, label }: Props) {
+export function HighlightOverlay({ target, pinned, working = false, label }: Props) {
   const [box, setBox] = useState<Box | null>(null);
 
   useEffect(() => {
@@ -43,11 +45,11 @@ export function HighlightOverlay({ target, pinned, label }: Props) {
 
   return (
     <div
-      className={`lumi-highlight${pinned ? ' pinned' : ''}`}
+      className={`lumi-highlight${working ? ' working' : pinned ? ' pinned' : ''}`}
       style={{ top: box.top - 2, left: box.left - 2, width: box.width + 4, height: box.height + 4 }}
     >
-      <span className="lumi-highlight-tag">{pinned ? 'Remembered' : 'Lumi Focus'}</span>
-      {!pinned && (
+      <span className="lumi-highlight-tag">{working ? 'LUMI · WORKING' : pinned ? 'Remembered' : 'Lumi Focus'}</span>
+      {!pinned && !working && (
         <span className="lumi-highlight-hint">
           <kbd>Alt</kbd>+<kbd>Click</kbd> or double-click to remember{label ? ` · ${label}` : ''}
         </span>

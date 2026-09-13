@@ -4,6 +4,11 @@ import type { CompareResult } from './compare';
 import type { LumiPreview } from './lumiPreview';
 import type { AgentAction } from './agentAction';
 import type { Mission } from './mission';
+import type { MissionSuggestions, PageContext } from './pageContext';
+
+// 'focus' is the ordinary "here it is" outline; 'working' means Lumi is acting on it
+// right now, and the overlay turns amber until the action is applied or refused.
+export type HighlightMode = 'focus' | 'working';
 
 export interface DetectedFormField {
   selector: string;
@@ -32,22 +37,25 @@ export type RuntimeMessage =
   | { type: 'REQUEST_SCORE'; objectId: string }
   | { type: 'REQUEST_FORM_FILL' }
   | { type: 'REQUEST_OFFER'; objectId: string }
-  | { type: 'REQUEST_HIGH_RISK_DEMO' }
+  | { type: 'REQUEST_SUBMIT' }
   | { type: 'APPLY_ACTION'; actionId: string }
   | { type: 'REJECT_ACTION'; actionId: string }
   | { type: 'SET_AGENT_STATE'; state: AgentState; message?: string }
   | { type: 'OPEN_SIDE_PANEL' }
   | { type: 'REMOVE_MEMORY_ITEM'; id: string }
-  | { type: 'CLEAR_MEMORY' };
+  | { type: 'CLEAR_MEMORY' }
+  | { type: 'SUGGEST_MISSIONS' };
 
 // Background -> content script (tab-targeted)
 export type TabMessage =
   | { type: 'DETECT_FORM_FIELDS' }
   | { type: 'APPLY_FIELD_VALUES'; changes: { selector: string; value: string }[] }
-  | { type: 'HIGHLIGHT_SELECTOR'; selector: string | null }
+  | { type: 'HIGHLIGHT_SELECTOR'; selector: string | null; mode?: HighlightMode }
   | { type: 'SUBMIT_FORM'; selector: string }
   | { type: 'READ_CHAT'; selector: string }
-  | { type: 'CLICK_SELECTOR'; selector: string };
+  | { type: 'CLICK_SELECTOR'; selector: string }
+  | { type: 'READ_PAGE_CONTEXT' }
+  | { type: 'PIN_SELECTOR'; selector: string };
 
 export type RuntimeResponseMap = {
   FOCUS_HOVER: LumiResult<null>;
@@ -58,13 +66,14 @@ export type RuntimeResponseMap = {
   REQUEST_SCORE: LumiResult<LumiFocusSnapshot>;
   REQUEST_FORM_FILL: LumiResult<LumiPreview>;
   REQUEST_OFFER: LumiResult<LumiPreview>;
-  REQUEST_HIGH_RISK_DEMO: LumiResult<AgentAction>;
+  REQUEST_SUBMIT: LumiResult<AgentAction>;
   APPLY_ACTION: LumiResult<AgentAction>;
   REJECT_ACTION: LumiResult<AgentAction>;
   SET_AGENT_STATE: LumiResult<null>;
   OPEN_SIDE_PANEL: LumiResult<null>;
   REMOVE_MEMORY_ITEM: LumiResult<null>;
   CLEAR_MEMORY: LumiResult<null>;
+  SUGGEST_MISSIONS: LumiResult<MissionSuggestions>;
 };
 
 export type TabResponseMap = {
@@ -72,6 +81,8 @@ export type TabResponseMap = {
   APPLY_FIELD_VALUES: LumiResult<{ applied: number }>;
   HIGHLIGHT_SELECTOR: LumiResult<null>;
   SUBMIT_FORM: LumiResult<{ submitted: boolean }>;
-  READ_CHAT: LumiResult<{ transcript: string }>;
+  READ_CHAT: LumiResult<{ transcript: string; inputSelector: string; sendSelector: string }>;
   CLICK_SELECTOR: LumiResult<{ clicked: boolean }>;
+  READ_PAGE_CONTEXT: LumiResult<PageContext>;
+  PIN_SELECTOR: LumiResult<LumiFocusSnapshot>;
 };

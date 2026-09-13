@@ -100,6 +100,21 @@ button:focus-visible {
   opacity: 0.55;
 }
 
+/* Lumi is acting on this element right now: amber, and still breathing so it reads as
+   in-progress rather than finished. */
+.lumi-highlight.working {
+  border-color: var(--warn);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18), 0 0 28px rgba(245, 158, 11, 0.45);
+  animation: lumi-pulse 1.2s ease-in-out infinite;
+}
+
+.lumi-highlight.working .lumi-highlight-tag {
+  background: var(--warn);
+  color: #1a1a1f;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
 .lumi-highlight.pinned .lumi-highlight-tag {
   background: var(--success);
   box-shadow: 0 4px 12px rgba(52, 211, 153, 0.35);

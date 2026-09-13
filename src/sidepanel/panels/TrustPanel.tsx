@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocalStorage } from '../../shared/storage/useChromeStorage';
-import { sendMessage } from '../../shared/messaging/sendMessage';
+import { sendMessage, sendTabMessage } from '../../shared/messaging/sendMessage';
 import type { AgentAction, RiskLevel } from '../../shared/types/agentAction';
 
 const RISK_STYLE: Record<RiskLevel, string> = {
@@ -18,6 +18,19 @@ const STATUS_LABEL: Record<AgentAction['status'], string> = {
   refused: 'Refused',
 };
 
+// Same jump as a memory card's Show: switch to the tab, then let the content script
+// scroll to the element and outline it. Approving something you cannot see is the thing
+// this panel exists to prevent.
+async function showOnPage(tabId: number, selector: string) {
+  if (tabId < 0 || !selector) return;
+  try {
+    await chrome.tabs.update(tabId, { active: true });
+    await sendTabMessage(tabId, { type: 'HIGHLIGHT_SELECTOR', selector });
+  } catch {
+    /* tab is gone */
+  }
+}
+
 export function TrustPanel() {
   const log = useLocalStorage('actionLog');
   const pending = useLocalStorage('pendingPreview');
@@ -29,7 +42,7 @@ export function TrustPanel() {
   const run = async (kind: 'fill' | 'high') => {
     setBusy(kind);
     setError(null);
-    const r = kind === 'fill' ? await sendMessage({ type: 'REQUEST_FORM_FILL' }) : await sendMessage({ type: 'REQUEST_HIGH_RISK_DEMO' });
+    const r = kind === 'fill' ? await sendMessage({ type: 'REQUEST_FORM_FILL' }) : await sendMessage({ type: 'REQUEST_SUBMIT' });
     if (!r.ok) setError(r.error);
     setBusy(null);
   };
@@ -37,7 +50,7 @@ export function TrustPanel() {
   return (
     <section className="lumi-card">
       <span className="lumi-label">Lumi Trust</span>
-      <p className="mb-3 mt-1 text-xs text-lumi-muted">Every action is risk-classified in code. Lumi previews before it acts.</p>
+      <p className="mb-3 mt-1 text-xs text-lumi-muted">Limits are enforced in code. Lumi previews before it acts and refuses rather than exceeds them.</p>
 
       {/* Risk legend as one segmented strip, not three boxed cards */}
       <div className="lumi-raised mb-3 grid grid-cols-3 divide-x divide-lumi-border/60 text-center text-[10px]">
@@ -60,7 +73,7 @@ export function TrustPanel() {
           {busy === 'fill' ? 'Reading form…' : 'Fill form from memory'}
         </button>
         <button className="lumi-btn flex-1 !border-lumi-danger/50 text-lumi-danger" onClick={() => run('high')} disabled={busy !== null || !!pending}>
-          Simulate high-risk
+          Place order
         </button>
       </div>
       {error && <p className="mt-2 text-[11px] text-lumi-warn">{error}</p>}
@@ -75,6 +88,13 @@ export function TrustPanel() {
             {pendingAction.risk === 'high' ? 'Lumi is waiting for explicit approval on the page.' : `Preview shown on the page: ${pending.changes.length} field(s).`}
           </p>
           <div className="mt-2.5 flex gap-1.5">
+            <button
+              className="lumi-btn !min-h-8 !py-1 !px-3"
+              title="Switch to the tab and scroll to what is waiting"
+              onClick={() => showOnPage(pending.tabId, pendingAction.targetSelector ?? pending.changes[0]?.selector ?? '')}
+            >
+              Show
+            </button>
             <button className="lumi-btn !min-h-8 !py-1 !px-3" onClick={() => sendMessage({ type: 'REJECT_ACTION', actionId: pending.actionId })}>
               Reject
             </button>
@@ -99,7 +119,7 @@ export function TrustPanel() {
                 <div className="min-w-0">
                   <p className="truncate text-[11.5px]">{a.label}</p>
                   <p className="text-[10px] text-lumi-muted">
-                    {STATUS_LABEL[a.status]} · {timeAgo(a.createdAt)}
+                    {STATUS_LABEL[a.status]}{executionNote(a)} · {timeAgo(a.createdAt)}
                   </p>
                 </div>
                 <span className={`lumi-chip shrink-0 ${RISK_STYLE[a.risk]}`}>{a.risk}</span>
@@ -110,6 +130,13 @@ export function TrustPanel() {
       </div>
     </section>
   );
+}
+
+// A high-risk action that was approved either reached the page or did not. Saying which
+// is the whole point of the origin gate, so the activity row says it outright.
+function executionNote(a: AgentAction): string {
+  if (a.type !== 'submit' || typeof a.payload?.executed !== 'boolean') return '';
+  return a.payload.executed ? ' · executed' : ' · recorded';
 }
 
 function timeAgo(ts: number): string {

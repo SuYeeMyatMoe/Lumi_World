@@ -4,6 +4,8 @@ import { findLabelText, isSensitiveField } from './sensitiveFieldGuard';
 
 type FieldEl = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
+const IGNORED_CONTAINERS = '[data-lumi-ignore], #seller-chat';
+
 const SKIPPED_INPUT_TYPES = new Set(['submit', 'button', 'reset', 'image', 'file', 'checkbox', 'radio', 'hidden', 'password']);
 
 export interface FieldDetection {
@@ -17,6 +19,10 @@ export function detectFormFields(root: ParentNode = document): FieldDetection {
   let protectedCount = 0;
 
   for (const el of candidates) {
+    // The negotiation composer is driven by REQUEST_OFFER through a fixed selector.
+    // It must never show up as a fillable form field, or a form fill would type an
+    // offer into the seller chat.
+    if (el.closest(IGNORED_CONTAINERS)) continue;
     if (el instanceof HTMLInputElement && SKIPPED_INPUT_TYPES.has((el.type || 'text').toLowerCase())) {
       if (el.type === 'password') protectedCount += 1;
       continue;
