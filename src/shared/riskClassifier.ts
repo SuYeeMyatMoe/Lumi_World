@@ -8,7 +8,10 @@ const RISK_TABLE: Record<ActionType, RiskLevel> = {
   compare: 'low',
   read: 'low',
   'fill-form': 'medium',
-  'send-offer': 'medium',
+  // An offer inside the mandate is low risk on purpose: the ceiling already bounds it,
+  // so Lumi sends it herself. Accepting a deal is what the human approves.
+  'send-offer': 'low',
+  'accept-deal': 'medium',
   submit: 'high',
   delete: 'high',
   'navigate-payment': 'high',

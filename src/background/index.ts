@@ -42,6 +42,32 @@ function describeObject(o: LumiFocusSnapshot, tag: string): string {
     .join('\n');
 }
 
+const MAX_NEGOTIATION_TURNS = 6;
+const NEGOTIATION_PAUSE_MS = 1500;
+
+function round50(value: number): number {
+  return Math.round(value / 50) * 50;
+}
+
+// Counters must move and must never repeat. Step halfway from our last offer towards
+// the lower of their price and our ceiling, rounded to something a human would say.
+function nextCounter(lastOffer: number | null, sellerPrice: number, limit: number, offered: Set<number>): number {
+  const target = Math.min(sellerPrice, limit);
+  const base = lastOffer === null ? target : (lastOffer + target) / 2;
+  let amount = Math.min(limit, round50(base));
+  while (offered.has(amount) && amount > 50) amount -= 50;
+  return Math.min(limit, Math.max(amount, 0));
+}
+
+// Types a message into the chat composer and sends it.
+async function sayInChat(tabId: number, inputSelector: string, sendSelector: string, text: string): Promise<boolean> {
+  const applied = await sendTabMessage(tabId, { type: 'APPLY_FIELD_VALUES', changes: [{ selector: inputSelector, value: text }] });
+  if (!applied.ok || applied.data.applied === 0) return false;
+  if (!sendSelector) return false;
+  const clicked = await sendTabMessage(tabId, { type: 'CLICK_SELECTOR', selector: sendSelector });
+  return clicked.ok;
+}
+
 // The tighter of ceiling and walk-away is the number that actually binds.
 function bindingLimit(mission: Mission | null): number | null {
   const m = mission?.mandate;
@@ -341,9 +367,9 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     return { ok: true, data: preview };
   },
 
-  // Drafts the next message in a negotiation. The seller's standing counter is checked
-  // against the mandate in code first: if it is already above the limit Lumi refuses
-  // without calling the model at all, so the refusal cannot be talked out of.
+  // Negotiates on its own inside the mandate. Offers at or below the ceiling are sent
+  // without asking, because the ceiling is the permission. The human is asked exactly
+  // once, at the moment of agreeing to pay.
   async REQUEST_OFFER(msg) {
     const tabId = await activeTabId();
     if (tabId === null) return { ok: false, code: 'NO_TAB', error: 'No active tab.' };
@@ -352,82 +378,117 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     const obj = mem.items.find((i) => i.id === msg.objectId);
     if (!obj) return { ok: false, code: 'UNKNOWN', error: 'That object is no longer in Lumi Memory.' };
 
-    const chat = await sendTabMessage(tabId, { type: 'READ_CHAT', selector: '' });
-    if (!chat.ok) return chat;
-    const { transcript, inputSelector, sendSelector } = chat.data;
-
     const mission = await getLocal('mission');
     const limit = bindingLimit(mission);
     const currency = mission?.mandate?.currency ?? null;
+    if (limit === null) {
+      return { ok: false, code: 'UNKNOWN', error: 'Set a mission with a ceiling before I negotiate.' };
+    }
+    const cash = (value: number) => money(value, currency);
 
-    // An opening asking price above the mandate is not a refusal — it is the reason to
-    // negotiate. A COUNTER above the mandate is refused: Lumi says so, and either stops
-    // (the seller called it final, so there is nothing left to win) or counters at the
-    // limit. Turn counting is what separates "their first ask" from "their answer to us".
-    const sellerTurns = transcript.split('\n').filter((line) => line.trim().length > 0).length;
-    const lastSellerLine = transcript.split('\n').filter(Boolean).pop() ?? '';
-    const counter = lastCounterpartPrice(transcript);
-    let refusalNote: string | null = null;
+    const offered = new Set<number>();
+    let lastOffer: number | null = null;
+    let refusals = 0;
 
-    if (counter !== null && sellerTurns >= 2) {
-      const verdict = checkMandate({ price: counter }, mission);
-      if (!verdict.ok) {
-        refusalNote = verdict.reason;
-        await createAction('send-offer', `Refused to meet ${money(counter, currency)}`, { tabId, targetSelector: inputSelector }, 'refused');
-        await setAgentState('warning', verdict.reason);
-        if (/\bfinal\b|\blast (?:price|offer)\b|best i can/i.test(lastSellerLine)) {
-          await setLocal('negotiationOutcome', { objectId: obj.id, outcome: 'walked-away', ceiling: limit, updatedAt: Date.now() });
-          setTimeout(() => settleToIdle(), 6000);
-          return { ok: false, code: 'REFUSED', error: verdict.reason };
-        }
+    for (let turn = 1; turn <= MAX_NEGOTIATION_TURNS; turn++) {
+      const chat = await sendTabMessage(tabId, { type: 'READ_CHAT', selector: '' });
+      if (!chat.ok) return chat;
+      const { transcript, inputSelector, sendSelector } = chat.data;
+      const lines = transcript.split('\n').filter((l) => l.trim().length > 0);
+      const sellerPrice = lastCounterpartPrice(transcript);
+      // One line means they have only stated an asking price. That is the reason to
+      // negotiate, not something to accept or refuse.
+      const hasAnswered = lines.length >= 2;
+
+      await setAgentState('thinking', LUMI_VOICE.thinking);
+
+      // 1. Their price is inside the mandate. This is the single approval.
+      if (sellerPrice !== null && sellerPrice <= limit && hasAnswered) {
+        const action = await createAction('accept-deal', `Accept at ${cash(sellerPrice)}`, {
+          tabId,
+          targetSelector: inputSelector,
+          payload: { amount: sellerPrice, inputSelector, sendSelector, objectId: obj.id },
+        });
+        const preview: LumiPreview = {
+          actionId: action.id,
+          tabId,
+          changes: [{ selector: inputSelector, label: 'Message to seller', currentValue: '', proposedValue: `Done — ${cash(sellerPrice)} works.` }],
+          rationale: `${cash(sellerPrice)} is within your limit of ${cash(limit)}. Approving sends this and closes the deal.`,
+          protectedFieldCount: 0,
+        };
+        await setLocal('pendingPreview', preview);
+        await updateActionStatus(action.id, 'previewed');
+        await setAgentState('warning', `${cash(sellerPrice)} works. Approve and I'll close it.`);
+        return { ok: true, data: preview };
       }
+
+      let amount: number;
+      let text: string;
+
+      if (sellerPrice !== null && sellerPrice > limit && hasAnswered) {
+        // 2. Above the mandate. They have already had one refusal and a counter, so
+        // they are not going to move: stop rather than keep bidding against a wall.
+        if (refusals >= 1) {
+          await sayInChat(tabId, inputSelector, sendSelector, "That's above my limit, I'll stop here.");
+          await createAction('send-offer', `Walked away from ${cash(sellerPrice)}`, { tabId, targetSelector: inputSelector }, 'refused');
+          await setLocal('negotiationOutcome', { objectId: obj.id, outcome: 'walked-away', ceiling: limit, updatedAt: Date.now() });
+          await setAgentState('warning', `${cash(sellerPrice)} is above my mandate. I stopped.`);
+          setTimeout(() => settleToIdle(), 6000);
+          return { ok: false, code: 'REFUSED', error: `${cash(sellerPrice)} is above the mandate ceiling of ${cash(limit)}.` };
+        }
+        refusals += 1;
+        amount = nextCounter(lastOffer, sellerPrice, limit, offered);
+        // Our own number comes first on purpose: the counterpart reads the first amount
+        // in the message as the offer, so leading with theirs would offer it back to them.
+        text = `I can do ${cash(amount)}. ${cash(sellerPrice)} is above my limit of ${cash(limit)}.`;
+        await createAction('send-offer', `Refused ${cash(sellerPrice)}, countered ${cash(amount)}`, { tabId, targetSelector: inputSelector }, 'refused');
+      } else {
+        // 3. Opening offer, or a counter that is simply the next step.
+        const drafted = await callTool({
+          tool: 'proposeOffer',
+          schema: offerSchema,
+          userContent: [
+            await missionContext(),
+            describeObject(obj, 'TARGET'),
+            `Last messages from the seller:\n${lines.slice(-3).join('\n') || '(none yet)'}`,
+            lastOffer === null ? 'I have not made an offer yet.' : `My last offer was ${lastOffer}.`,
+            `Hard limit: never offer more than ${limit}. The amount is clamped in code anyway.`,
+            'Draft my next message. Short, first person, no pleasantries and no boilerplate.',
+          ].join('\n\n'),
+        });
+        if (!drafted.ok) {
+          await setAgentState('warning', drafted.code === 'NO_API_KEY' ? LUMI_VOICE.noKey : LUMI_VOICE.uncertain);
+          setTimeout(() => settleToIdle(), 2500);
+          return drafted;
+        }
+        amount =
+          lastOffer === null
+            ? Math.min(round50(drafted.data.amount), limit)
+            : nextCounter(lastOffer, sellerPrice ?? limit, limit, offered);
+        if (offered.has(amount)) amount = nextCounter(lastOffer, sellerPrice ?? limit, limit, offered);
+        text = parseLastPrice(drafted.data.message) === amount ? drafted.data.message : `I can do ${cash(amount)}.`;
+        await createAction('send-offer', `Offered ${cash(amount)}`, { tabId, targetSelector: inputSelector }, 'applied');
+      }
+
+      await setAgentState('thinking', `Countering at ${cash(amount)}…`);
+      const sent = await sayInChat(tabId, inputSelector, sendSelector, text);
+      if (!sent) {
+        await settleToIdle();
+        return { ok: false, code: 'NO_TAB', error: 'Could not reach the chat to send the offer.' };
+      }
+      offered.add(amount);
+      lastOffer = amount;
+
+      // Paced so a viewer can read each turn as it happens.
+      await new Promise((resolve) => setTimeout(resolve, NEGOTIATION_PAUSE_MS));
     }
 
-    await setAgentState('thinking', LUMI_VOICE.thinking);
-    const result = await callTool({
-      tool: 'proposeOffer',
-      schema: offerSchema,
-      userContent: [
-        await missionContext(),
-        '',
-        `You are negotiating for: ${describeObject(obj, 'TARGET')}`,
-        '',
-        `Seller's messages so far:\n${transcript || '(no messages yet)'}`,
-        '',
-        limit !== null ? `Hard limit: never offer more than ${limit}.` : 'No budget limit was stated.',
-        'Propose the next offer.',
-      ].join('\n'),
-    });
-
-    if (!result.ok) {
-      await setAgentState('warning', result.code === 'NO_API_KEY' ? LUMI_VOICE.noKey : LUMI_VOICE.uncertain);
-      setTimeout(() => settleToIdle(), 2500);
-      return result;
-    }
-
-    // Clamp in code. The model is a drafter, not the thing that decides the number.
-    const amount = limit !== null ? Math.min(result.data.amount, limit) : result.data.amount;
-    const stated = parseLastPrice(result.data.message);
-    const text = stated === amount ? result.data.message : `Could you do ${money(amount, currency)}?`;
-
-    const action = await createAction('send-offer', `Offer ${money(amount, currency)}`, {
-      tabId,
-      targetSelector: inputSelector,
-      payload: { amount, sendSelector, objectId: obj.id },
-    });
-    const preview: LumiPreview = {
-      actionId: action.id,
-      tabId,
-      changes: [{ selector: inputSelector, label: 'Message to seller', currentValue: '', proposedValue: text }],
-      rationale: refusalNote ? `${refusalNote} Countering at my limit instead.` : result.data.rationale,
-      protectedFieldCount: 0,
-    };
-    await setLocal('pendingPreview', preview);
-    await updateActionStatus(action.id, 'previewed');
-    // Keep the refusal on screen when there was one: it is the point being made.
-    await setAgentState('warning', refusalNote ?? LUMI_VOICE.needsApproval);
-    return { ok: true, data: preview };
+    await setLocal('negotiationOutcome', { objectId: obj.id, outcome: 'walked-away', ceiling: limit, updatedAt: Date.now() });
+    await setAgentState('warning', 'We did not converge. I stopped before my limit.');
+    setTimeout(() => settleToIdle(), 6000);
+    return { ok: false, code: 'REFUSED', error: 'Negotiation did not converge within the turn limit.' };
   },
+
 
   async REQUEST_SUBMIT() {
     const tabId = await activeTabId();
@@ -480,20 +541,21 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
         return { ok: false, code: 'NO_TAB', error: 'Could not reach the page to apply changes. Is the tab still open?' };
       }
     }
-    // An approved offer is typed into the composer and then sent, and the seller's
-    // reply is read back so the outcome is recorded for the fallback layer.
-    if (action.type === 'send-offer' && preview?.actionId === action.id) {
-      const applied = await sendTabMessage(preview.tabId, {
-        type: 'APPLY_FIELD_VALUES',
-        changes: preview.changes.map((c) => ({ selector: c.selector, value: c.proposedValue })),
-      });
-      if (!applied.ok) {
+    // The one approval in a negotiation: sending the acceptance. Offers below the
+    // ceiling were already sent autonomously; this is the moment money is committed.
+    if (action.type === 'accept-deal' && preview?.actionId === action.id) {
+      const sendSelector = typeof action.payload?.sendSelector === 'string' ? action.payload.sendSelector : '';
+      const sent = await sayInChat(
+        preview.tabId,
+        preview.changes[0]?.selector ?? '',
+        sendSelector,
+        preview.changes[0]?.proposedValue ?? '',
+      );
+      if (!sent) {
         await setLocal('pendingPreview', null);
         await settleToIdle();
-        return { ok: false, code: 'NO_TAB', error: 'Could not reach the chat to send the offer.' };
+        return { ok: false, code: 'NO_TAB', error: 'Could not reach the chat to accept the deal.' };
       }
-      const sendSelector = typeof action.payload?.sendSelector === 'string' ? action.payload.sendSelector : '';
-      if (sendSelector) await sendTabMessage(preview.tabId, { type: 'CLICK_SELECTOR', selector: sendSelector });
       await recordNegotiationOutcome(preview.tabId, action);
     }
 
