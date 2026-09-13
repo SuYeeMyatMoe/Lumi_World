@@ -62,6 +62,25 @@ function nextCounter(lastOffer: number | null, sellerPrice: number, limit: numbe
   return Math.min(limit, Math.max(amount, 0));
 }
 
+// Show the work before doing it. The viewer sees the page scroll to the thing Lumi is
+// about to touch and go amber, which is the difference between an agent that acts and an
+// agent you can follow. 400ms is enough for the smooth scroll to land.
+const FOLLOW_PAUSE_MS = 400;
+
+async function showWorkingOn(tabId: number, selector: string): Promise<void> {
+  if (!selector) return;
+  await sendTabMessage(tabId, { type: 'HIGHLIGHT_SELECTOR', selector, mode: 'working' });
+  await new Promise((resolve) => setTimeout(resolve, FOLLOW_PAUSE_MS));
+}
+
+// Releases the amber outline. Always paired with showWorkingOn, including on failure.
+async function doneWorking(tabId: number): Promise<void> {
+  await sendTabMessage(tabId, { type: 'HIGHLIGHT_SELECTOR', selector: null, mode: 'working' });
+}
+
+const CHAT_CONTAINER = '#seller-chat';
+const ORDER_CONFIRMATION = '#order-confirmation';
+
 // Types a message into the chat composer and sends it.
 async function sayInChat(tabId: number, inputSelector: string, sendSelector: string, text: string): Promise<boolean> {
   const applied = await sendTabMessage(tabId, { type: 'APPLY_FIELD_VALUES', changes: [{ selector: inputSelector, value: text }] });
@@ -356,7 +375,12 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
       return { ok: false, code: 'REFUSED', error: verdict.reason };
     }
 
-    const action = await createAction('fill-form', `Fill ${changes.length} field${changes.length === 1 ? '' : 's'}`, { tabId });
+    const formSelector = fields.find((f) => f.selector === changes[0]?.selector)?.formSelector ?? '';
+    const action = await createAction('fill-form', `Fill ${changes.length} field${changes.length === 1 ? '' : 's'}`, {
+      tabId,
+      targetSelector: changes[0]?.selector,
+      payload: { formSelector },
+    });
     const preview: LumiPreview = {
       actionId: action.id,
       tabId,
@@ -432,7 +456,9 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
         // 2. Above the mandate. They have already had one refusal and a counter, so
         // they are not going to move: stop rather than keep bidding against a wall.
         if (refusals >= 1) {
+          await showWorkingOn(tabId, CHAT_CONTAINER);
           await sayInChat(tabId, inputSelector, sendSelector, "That's above my limit, I'll stop here.");
+          await doneWorking(tabId);
           await createAction('send-offer', `Walked away from ${cash(sellerPrice)}`, { tabId, targetSelector: inputSelector }, 'refused');
           await setLocal('negotiationOutcome', { objectId: obj.id, outcome: 'walked-away', ceiling: limit, updatedAt: Date.now() });
           await setAgentState('warning', `${cash(sellerPrice)} is above my mandate. I stopped.`);
@@ -474,7 +500,9 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
       }
 
       await setAgentState('thinking', `Countering at ${cash(amount)}…`);
+      await showWorkingOn(tabId, CHAT_CONTAINER);
       const sent = await sayInChat(tabId, inputSelector, sendSelector, text);
+      await doneWorking(tabId);
       if (!sent) {
         await settleToIdle();
         return { ok: false, code: 'NO_TAB', error: 'Could not reach the chat to send the offer.' };
@@ -534,20 +562,25 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     const preview = await getLocal('pendingPreview');
 
     if (action.type === 'fill-form' && preview?.actionId === action.id) {
+      const formSelector = typeof action.payload?.formSelector === 'string' ? action.payload.formSelector : '';
+      await showWorkingOn(preview.tabId, formSelector || (preview.changes[0]?.selector ?? ''));
       const applied = await sendTabMessage(preview.tabId, {
         type: 'APPLY_FIELD_VALUES',
         changes: preview.changes.map((c) => ({ selector: c.selector, value: c.proposedValue })),
       });
       if (!applied.ok) {
+        await doneWorking(preview.tabId);
         await setLocal('pendingPreview', null);
         await settleToIdle();
         return { ok: false, code: 'NO_TAB', error: 'Could not reach the page to apply changes. Is the tab still open?' };
       }
+      await doneWorking(preview.tabId);
     }
     // The one approval in a negotiation: sending the acceptance. Offers below the
     // ceiling were already sent autonomously; this is the moment money is committed.
     if (action.type === 'accept-deal' && preview?.actionId === action.id) {
       const sendSelector = typeof action.payload?.sendSelector === 'string' ? action.payload.sendSelector : '';
+      await showWorkingOn(preview.tabId, CHAT_CONTAINER);
       const sent = await sayInChat(
         preview.tabId,
         preview.changes[0]?.selector ?? '',
@@ -555,11 +588,13 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
         preview.changes[0]?.proposedValue ?? '',
       );
       if (!sent) {
+        await doneWorking(preview.tabId);
         await setLocal('pendingPreview', null);
         await settleToIdle();
         return { ok: false, code: 'NO_TAB', error: 'Could not reach the chat to accept the deal.' };
       }
       await recordNegotiationOutcome(preview.tabId, action);
+      await doneWorking(preview.tabId);
     }
 
     // A submit executes only where the settings allow it. Everywhere else the approval is
@@ -568,12 +603,18 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
       const { allowed, origin } = await mayExecuteHighRisk(action.tabId);
       const formSelector = typeof action.payload?.formSelector === 'string' ? action.payload.formSelector : '';
       if (allowed && action.tabId !== undefined && formSelector) {
+        await showWorkingOn(action.tabId, formSelector);
         const submitted = await sendTabMessage(action.tabId, { type: 'SUBMIT_FORM', selector: formSelector });
         if (!submitted.ok || !submitted.data.submitted) {
+          await doneWorking(action.tabId);
           await setLocal('pendingPreview', null);
           await settleToIdle();
           return { ok: false, code: 'NO_TAB', error: 'Could not reach the page to submit. Is the tab still open?' };
         }
+        await doneWorking(action.tabId);
+        // Land on the result rather than the form that produced it. Harmless when the
+        // page has no confirmation block: the selector simply resolves to nothing.
+        await sendTabMessage(action.tabId, { type: 'HIGHLIGHT_SELECTOR', selector: ORDER_CONFIRMATION });
       }
       await mergeActionPayload(action.id, { executed: allowed, origin });
     }
