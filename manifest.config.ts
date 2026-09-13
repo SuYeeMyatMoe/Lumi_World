@@ -10,7 +10,7 @@ export default defineManifest({
   version: '0.1.0',
   action: { default_title: 'Open Lumi' },
   permissions: ['storage', 'scripting', 'sidePanel', 'tabs'],
-  host_permissions: ['https://api.openai.com/*'],
+  host_permissions: ['http://*/*', 'https://*/*', 'https://api.openai.com/*'],
   background: { service_worker: 'src/background/index.ts', type: 'module' },
   side_panel: { default_path: 'src/sidepanel/index.html' },
   options_page: 'src/options/index.html',
