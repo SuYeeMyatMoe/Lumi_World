@@ -72,6 +72,6 @@ export type TabResponseMap = {
   APPLY_FIELD_VALUES: LumiResult<{ applied: number }>;
   HIGHLIGHT_SELECTOR: LumiResult<null>;
   SUBMIT_FORM: LumiResult<{ submitted: boolean }>;
-  READ_CHAT: LumiResult<{ transcript: string }>;
+  READ_CHAT: LumiResult<{ transcript: string; inputSelector: string; sendSelector: string }>;
   CLICK_SELECTOR: LumiResult<{ clicked: boolean }>;
 };
