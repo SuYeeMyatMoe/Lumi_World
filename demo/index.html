@@ -179,7 +179,8 @@
         location.replace('http://localhost:5173/demo/index.html');
       }
     </script>
-    <script type="module" src="/demo/seller.js"></script>
+    <!-- Loaded through /src so the crx dev plugin keeps it; see src/demo/sellerBoot.ts -->
+    <script type="module" src="/src/demo/sellerBoot.ts"></script>
     <script type="module" src="/src/content/devPreview.tsx"></script>
   </body>
 </html>

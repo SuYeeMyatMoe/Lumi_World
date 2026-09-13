@@ -3,6 +3,10 @@
 // already injecting, and a second mount races it and shadows the extension (the mascot
 // click opens a tab instead of the side panel).
 import { installDevShim } from '../shared/devShim';
+// The crx dev plugin fixes the demo page's module list when the server starts, and this
+// file is the only /src module on it. Booting the scripted seller from here means the
+// chat works without restarting the dev server. Both are dev-only and no-ops elsewhere.
+import '../demo/sellerBoot';
 
 const HOST_ID = 'lumi-world-host';
 
