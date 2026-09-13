@@ -41,6 +41,8 @@ What none of this can be reproduced by in a chatbox: pointing as an input modali
 
 ## Social post draft
 
+> **Superseded — post [social-post.md](social-post.md) instead.** That file has the X post counted against the 280-character limit, the partner line as a first reply, and the handles marked as placeholders to fill from the portal.
+
 > Partners are named below as plain text. **Add their @handles from the submission portal before posting** — the names here are from the event page, the handles are not.
 >
 > Partners: AI Tinkerers · OpenAI · CopilotKit · OpenRouter · Exa · Auth0 · Ambiguous AI · Trigger.dev · Mozilla · Google Cloud Run
