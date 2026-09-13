@@ -14,6 +14,11 @@ export function SidePanelApp() {
   const memory = useLocalStorage('lumiMemory');
   const [selected, setSelected] = useState<string[]>([]);
 
+  // Opening Lumi Space brings the page mascot back.
+  useEffect(() => {
+    void setLocal('overlayVisible', true);
+  }, []);
+
   // Drop selections for objects that were forgotten.
   useEffect(() => {
     setSelected((prev) => prev.filter((id) => memory.items.some((i) => i.id === id)));

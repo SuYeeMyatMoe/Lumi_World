@@ -36,7 +36,7 @@ Then in Chrome: `chrome://extensions` → enable **Developer mode** → **Load u
 
 1. Click the Lumi toolbar icon (or the mascot on any page) to open the side panel. Close Lumi with the × on the mascot; it stays hidden until you click the toolbar icon or **Show** in the side panel.
 2. Open ⚙ Options and paste your OpenAI API key. Focus and Memory work without it; compare, scoring and form-fill need it.
-3. Try the demo page: `npm run dev` and open `http://localhost:5173/demo/index.html`.
+3. Try the demo page: `npm run dev` and open `http://localhost:5173/demo/index.html` (do not open the HTML file from disk).
 
 ### Golden path (2-minute demo)
 

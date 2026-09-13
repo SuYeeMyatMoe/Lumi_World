@@ -84,6 +84,30 @@
   50% { box-shadow: 0 0 0 6px rgba(34, 211, 238, 0.18), 0 0 30px rgba(34, 211, 238, 0.5); }
 }
 
+.lumi-reopen {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2147483646;
+  pointer-events: auto;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: #e8e8f0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.lumi-reopen:hover {
+  border-color: var(--focus);
+  color: var(--focus);
+}
+
 .lumi-widget {
   position: fixed;
   right: 18px;

@@ -117,7 +117,17 @@ export function ContentApp({ shadowHost }: Props) {
     void sendMessage({ type: 'FOCUS_HOVER', pos: null });
   }, []);
 
-  if (!overlayVisible) return null;
+  const openLumi = useCallback(() => {
+    void setLocal('overlayVisible', true);
+  }, []);
+
+  if (!overlayVisible) {
+    return (
+      <button type="button" className="lumi-reopen" title="Open Lumi" aria-label="Open Lumi" onClick={openLumi}>
+        Lumi
+      </button>
+    );
+  }
 
   return (
     <>

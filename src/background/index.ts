@@ -17,19 +17,9 @@ import { createAction, findAction, updateActionStatus } from './actionLog';
 chrome.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' }).catch(() => {});
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 });
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
-
-// Toolbar click reopens Lumi on pages and opens Lumi Space.
-chrome.action.onClicked.addListener(async (tab) => {
-  await setLocal('overlayVisible', true);
-  if (tab.id !== undefined) {
-    await chrome.sidePanel.open({ tabId: tab.id }).catch(() => {});
-  } else if (tab.windowId !== undefined) {
-    await chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => {});
-  }
-});
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 
 function describeObject(o: LumiFocusSnapshot, tag: string): string {
   return [

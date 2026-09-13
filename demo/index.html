@@ -144,7 +144,12 @@
     </main>
 
     <footer>TechMart demo page for Lumi World · not a real store</footer>
-    <!-- Dev-only: append ?preview=1 to try the overlay without loading the extension -->
+    <script>
+      // Opening this file from disk cannot run the React overlay. Use the Vite demo URL instead.
+      if (location.protocol === 'file:') {
+        location.replace('http://localhost:5173/demo/index.html');
+      }
+    </script>
     <script type="module" src="/src/content/devPreview.tsx"></script>
   </body>
 </html>
