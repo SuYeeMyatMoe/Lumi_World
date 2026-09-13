@@ -1,11 +1,11 @@
 import type { LumiFocusSnapshot } from '../types/lumiFocus';
 import { buildSelector } from './selector';
 import { isSensitiveField } from './sensitiveFieldGuard';
+import { PRICE_PATTERN } from './price';
 
 export type PartialSnapshot = Omit<LumiFocusSnapshot, 'id' | 'createdAt' | 'tabId' | 'tabUrl' | 'tabTitle'>;
 
 const MAX_TEXT = 600;
-const PRICE_PATTERN = /(?:RM|MYR|USD|US\$|\$|€|£|¥|SGD|S\$)\s?\d[\d,]*(?:\.\d{1,2})?|\d[\d,]*(?:\.\d{1,2})?\s?(?:RM|MYR|USD|SGD)/i;
 
 const INLINE_TAGS = new Set(['SPAN', 'B', 'STRONG', 'I', 'EM', 'SMALL', 'A', 'LABEL', 'SVG', 'PATH', 'IMG']);
 const CARD_TAGS = new Set(['ARTICLE', 'LI', 'TR', 'FIGURE']);
