@@ -6,6 +6,7 @@ import { LumiMascotFull } from './LumiMascotFull';
 import { MissionPanel } from './panels/MissionPanel';
 import { MemoryPanel } from './panels/MemoryPanel';
 import { ComparePanel } from './panels/ComparePanel';
+import { FallbackPanel } from './panels/FallbackPanel';
 import { TrustPanel } from './panels/TrustPanel';
 
 function tabOrigin(url: string | undefined): string | null {
@@ -114,6 +115,7 @@ export function SidePanelApp() {
         <MissionPanel />
         <MemoryPanel selected={selected} onToggle={toggle} />
         <ComparePanel selected={selected} />
+        <FallbackPanel />
         <TrustPanel />
       </main>
 
