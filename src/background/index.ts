@@ -186,6 +186,26 @@ async function mayExecuteHighRisk(tabId: number | undefined): Promise<{ allowed:
   return { allowed: origin !== null && settings.executeHighRiskOrigins.includes(origin), origin };
 }
 
+async function alternativeSearchUrl(objectId: string): Promise<string> {
+  const [memory, mission, outcome] = await Promise.all([
+    getLocal('lumiMemory'),
+    getLocal('mission'),
+    getLocal('negotiationOutcome'),
+  ]);
+  const product = memory.items.find((item) => item.id === objectId);
+  const constraints = mission?.mandate?.mustHave ?? [];
+  const query = [
+    product?.extracted.label,
+    ...constraints,
+    mission?.goal,
+    outcome?.ceiling === null || outcome?.ceiling === undefined ? null : `under RM ${outcome.ceiling}`,
+  ].filter(Boolean).join(' ');
+  const url = new URL('https://www.google.com/search');
+  url.searchParams.set('tbm', 'shop');
+  url.searchParams.set('q', query || 'product deals');
+  return url.toString();
+}
+
 registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
   async FOCUS_HOVER(msg, sender) {
     const tabId = sender.tab?.id;
@@ -533,6 +553,15 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     return { ok: false, code: 'REFUSED', error: 'Negotiation did not converge within the turn limit.' };
   },
 
+  async SEARCH_ALTERNATIVES(msg) {
+    const outcome = await getLocal('negotiationOutcome');
+    if (!outcome || outcome.outcome !== 'walked-away') {
+      return { ok: false, code: 'UNKNOWN', error: 'Lumi can search for an alternative after a seller walks away.' };
+    }
+    const url = await alternativeSearchUrl(msg.objectId);
+    await chrome.tabs.create({ url, active: true });
+    return { ok: true, data: { url } };
+  },
 
   async REQUEST_SUBMIT() {
     const tabId = await activeTabId();
