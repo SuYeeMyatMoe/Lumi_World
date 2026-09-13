@@ -28,6 +28,7 @@ export const mandateSchema = z.object({
   ceiling: z.number().nullish(),
   currency: z.string().nullish(),
   walkAway: z.number().nullish(),
+  objective: z.enum(['cheapest', 'best-fit']).nullish(),
 });
 
 export const offerSchema = z.object({
@@ -84,7 +85,7 @@ export const TOOLS = {
     function: {
       name: 'parseMandate',
       description:
-        'Extract the hard constraints from a plain-language mission so they can be enforced in code. Extract only limits the user actually stated; use null when they did not state one. Never invent a budget.',
+        'Extract the hard constraints from a plain-language mission so they can be enforced in code. Extract only limits the user actually stated; use null when they did not state one. Never invent a budget. Example: "find the cheapest macbook air for me (for student)" gives mustHave ["MacBook Air"], objective "cheapest", ceiling null — "cheapest" is the objective, and "for me" and "for student" are audience, so neither belongs in mustHave.',
       parameters: {
         type: 'object',
         properties: {
@@ -92,13 +93,19 @@ export const TOOLS = {
           mustHave: {
             type: 'array',
             items: { type: 'string' },
-            description: 'Non-negotiable requirements as short searchable phrases, e.g. "16 GB RAM". Empty if none were stated.',
+            description:
+              'Non-negotiable requirements, ONLY as attributes that can be verified against a product listing: brand or model names ("MacBook Air", "RTX 4060"), numeric specs with their unit ("16 GB RAM", "512 GB SSD", "14 inch"), or named features ("backlit keyboard"). NEVER audience, purpose or preference: "for student", "for me", "for gaming", "cheapest", "best", "good", "portable" describe the buyer or the wish, not the product, and a listing cannot be checked against them — they belong in goal, and a preference about price belongs in objective. Empty if the user stated no verifiable attribute.',
           },
           ceiling: { type: ['number', 'null'], description: 'Maximum price the user will pay, as a plain number without currency or separators. Null if unstated.' },
           currency: { type: ['string', 'null'], description: 'Currency code or symbol the user used, e.g. "RM". Null if unstated.' },
           walkAway: { type: ['number', 'null'], description: 'Price above which the user said to walk away. Null if unstated; often equal to the ceiling.' },
+          objective: {
+            type: 'string',
+            enum: ['cheapest', 'best-fit'],
+            description: 'How to choose among options that already satisfy the mandate. "cheapest" only when the user asked for the lowest price ("cheapest", "as cheap as possible", "budget option"); otherwise "best-fit".',
+          },
         },
-        required: ['goal', 'mustHave', 'ceiling', 'currency', 'walkAway'],
+        required: ['goal', 'mustHave', 'ceiling', 'currency', 'walkAway', 'objective'],
         additionalProperties: false,
       },
     },

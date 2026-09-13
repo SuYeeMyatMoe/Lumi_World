@@ -5,3 +5,12 @@ dist/
 .DS_Store
 .env
 .env.*
+
+# Working docs — kept locally, not part of the submission repo
+docs/
+
+# Unused 9 MB asset: the mascot is procedural geometry
+Lumi_3d_model.glb
+
+# Vite writes these next to the config on restart
+vite.config.ts.timestamp-*.mjs

@@ -217,9 +217,12 @@ a1902ea 13:41 kaylaelishevaa  Merge branch 'integration'
 a86eea7 13:59 kaylaelishevaa  Merge remote-tracking branch 'origin/run-mission' into integration
 462b9fe 14:02 kaylaelishevaa  feat(follow): show the page action before performing it
 5301e13 14:02 kaylaelishevaa  Merge branch 'integration'
+40125a7 14:10 kaylaelishevaa  fix(context): find things on offer by price, not by card-shaped markup
+f55458b 14:15 kaylaelishevaa  Merge remote-tracking branch 'origin/run-mission' into integration
+4cf25ae 14:15 kaylaelishevaa  Merge branch 'integration'
 ```
 
-`0b13aeb` is an import: one commit, 68 files, 7,986 insertions, containing the Lumi World MVP — mascot, focus engine, memory, the compare/score/fill tools, preview overlay, risk table, side panel and demo store. That code was written before the event; 11:30 is when it was pushed to this repo, not when it was authored. The three commits after it (`996be88`, `84560ac`, `c1c7b3e`) are fixes to that base made at the event.
+`0b13aeb` is a single 68-file initial import committed 11:30 KL, authored by SuYeeMyatMoe: 7,986 insertions containing the Lumi World MVP — mascot, focus engine, memory, the compare/score/fill tools, preview overlay, risk table, side panel and demo store. That code was written before the event; 11:30 is when it was pushed to this repo, not when it was authored. The three commits after it (`996be88`, `84560ac`, `c1c7b3e`) are fixes to that base made at the event.
 
 Written at the event, from `5237490` (12:18) onward: the mandate layer, the execution layer, the scripted seller, the chat-surface detector, the autonomous negotiation engine, run-my-mission orchestration, mission suggestions, the failure-state polish, and this documentation.
 
@@ -234,7 +237,6 @@ src/
   mascot/         React Three Fiber Lumi: body, eyes, state config, look-at
   shared/         types, storage hooks, typed messaging, DOM utils, risk classifier, mandate check
 demo/             TechMart demo store (products, protected fields, scripted seller chat)
-docs/             video script, submission pack
 ```
 
 ## Out of scope (for now)
