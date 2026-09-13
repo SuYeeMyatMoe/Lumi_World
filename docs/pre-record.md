@@ -30,7 +30,7 @@ is 14:15–14:50; nothing here should be discovered on camera.
 - [ ] Keep the key on the clipboard. The 1:44 beat removes it to show the no-key state, and you will want it back for the next take.
 - [ ] **Reset demo state** in Options — clears Lumi Memory, comparisons, the action log, any pending preview, the mission and the last negotiation outcome, and settles Lumi to idle. Your key, model and site settings survive it. The panel must start empty; a leftover memory item or a stale mission is the most common reason a take has to be redone.
 - [ ] Mission is empty, so the Mission panel offers page-derived suggestions rather than a set mission.
-- [ ] Lumi is visible on the demo store. If you clicked the × on the mascot in an earlier take, Lumi is hidden on that origin — **click the toolbar icon** to bring it back (opening the side panel un-hides the current origin). Reset demo state does *not* clear this.
+- [ ] Lumi is visible on the demo store. If you clicked the × on the mascot in an earlier take, Lumi is hidden on that origin — Reset demo state brings it back everywhere, or click the toolbar icon to un-hide just the current origin.
 - [ ] `localhost` is not in Options → Paused sites. That list is a separate, permanent setting; an origin on it gets no mascot at all.
 
 ## Window and OS
