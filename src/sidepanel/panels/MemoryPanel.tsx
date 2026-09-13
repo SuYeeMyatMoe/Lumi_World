@@ -84,7 +84,7 @@ function MemoryCard({
   onScore: () => void;
   onRemove: () => void;
 }) {
-  const host = safeHost(item.tabUrl);
+  const host = safeHost(item.tabUrl, item.tabTitle);
   const s = item.missionScore;
   return (
     <li
@@ -140,10 +140,16 @@ function MemoryCard({
   );
 }
 
-function safeHost(url: string): string {
+// Every card names where it came from, whether the user pinned it or the orchestrator
+// did. An item with no usable URL still gets a line, so the cards stay the same shape.
+function safeHost(url: string, title?: string): string {
   try {
-    return new URL(url).hostname.replace(/^www\./, '');
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    if (host) return host;
   } catch {
-    return url;
+    /* not a URL — fall through to the title */
   }
+  const trimmed = (title ?? '').trim();
+  if (trimmed) return trimmed.length > 48 ? `${trimmed.slice(0, 47)}…` : trimmed;
+  return 'unknown source';
 }
