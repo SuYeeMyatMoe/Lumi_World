@@ -12,7 +12,7 @@ import { LUMI_VOICE, uid } from '../shared/constants';
 import { callTool } from './openaiClient';
 import { compareResultSchema, formFillSchema, mandateSchema, offerSchema, scoreResultSchema } from './toolSchemas';
 import { flashSuccess, setAgentState, setFocusPos, settleToIdle } from './agentState';
-import { createAction, findAction, updateActionStatus } from './actionLog';
+import { createAction, findAction, mergeActionPayload, updateActionStatus } from './actionLog';
 import { checkMandate } from '../shared/riskClassifier';
 import { parseAmountLoose, parseLastPrice, parsePrice } from '../shared/dom/price';
 import { lastCounterpartPrice } from '../shared/dom/chatSurfaceDetector';
@@ -117,6 +117,24 @@ async function recordNegotiationOutcome(tabId: number, action: AgentAction): Pro
   if (!withinMandate) {
     await setLocal('negotiationOutcome', { objectId, outcome: 'walked-away', ceiling: limit, updatedAt: Date.now() });
   }
+}
+
+async function tabOrigin(tabId: number): Promise<string | null> {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    return tab.url ? new URL(tab.url).origin : null;
+  } catch {
+    return null;
+  }
+}
+
+// Whether an approved high-risk action may actually touch this page. Deterministic and
+// origin-based: the demo store executes, every other site records the approval only.
+async function mayExecuteHighRisk(tabId: number | undefined): Promise<{ allowed: boolean; origin: string | null }> {
+  if (tabId === undefined) return { allowed: false, origin: null };
+  const settings = await getLocal('lumiSettings');
+  const origin = await tabOrigin(tabId);
+  return { allowed: origin !== null && settings.executeHighRiskOrigins.includes(origin), origin };
 }
 
 registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
@@ -411,14 +429,33 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     return { ok: true, data: preview };
   },
 
-  async REQUEST_HIGH_RISK_DEMO() {
+  async REQUEST_SUBMIT() {
     const tabId = await activeTabId();
-    const action = await createAction('submit', 'Submit this form', { tabId: tabId ?? undefined });
+    if (tabId === null) return { ok: false, code: 'NO_TAB', error: 'No active tab.' };
+
+    // The form the user can actually see filled in: the one owning the most fields.
+    const detected = await sendTabMessage(tabId, { type: 'DETECT_FORM_FIELDS' });
+    if (!detected.ok) return { ok: false, code: 'NO_TAB', error: 'Lumi is not running on this page. Reload the tab and try again.' };
+    const counts = new Map<string, number>();
+    for (const f of detected.data.fields) {
+      if (f.formSelector) counts.set(f.formSelector, (counts.get(f.formSelector) ?? 0) + 1);
+    }
+    const formSelector = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (!formSelector) return { ok: false, code: 'UNKNOWN', error: 'No form on this page to submit.' };
+
+    const { allowed, origin } = await mayExecuteHighRisk(tabId);
+    const action = await createAction('submit', 'Submit this form', {
+      tabId,
+      targetSelector: formSelector,
+      payload: { formSelector, origin },
+    });
     const preview: LumiPreview = {
       actionId: action.id,
-      tabId: tabId ?? -1,
+      tabId,
       changes: [],
-      rationale: 'Submitting sends the form to the site. This cannot be undone by Lumi.',
+      rationale: allowed
+        ? 'Submitting sends the form to the site. This cannot be undone by Lumi.'
+        : `Submitting sends the form to the site. On ${origin ?? 'this origin'} Lumi will record your approval but not execute it.`,
       protectedFieldCount: 0,
     };
     await setLocal('pendingPreview', preview);
@@ -460,8 +497,21 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
       await recordNegotiationOutcome(preview.tabId, action);
     }
 
-    // High-risk demo actions (submit) are intentionally NOT executed against the page;
-    // the gate itself is the deliverable. Only the approval is recorded.
+    // A submit executes only where the settings allow it. Everywhere else the approval is
+    // recorded and the page is left alone — the gate, not the click, is the deliverable.
+    if (action.type === 'submit') {
+      const { allowed, origin } = await mayExecuteHighRisk(action.tabId);
+      const formSelector = typeof action.payload?.formSelector === 'string' ? action.payload.formSelector : '';
+      if (allowed && action.tabId !== undefined && formSelector) {
+        const submitted = await sendTabMessage(action.tabId, { type: 'SUBMIT_FORM', selector: formSelector });
+        if (!submitted.ok || !submitted.data.submitted) {
+          await setLocal('pendingPreview', null);
+          await settleToIdle();
+          return { ok: false, code: 'NO_TAB', error: 'Could not reach the page to submit. Is the tab still open?' };
+        }
+      }
+      await mergeActionPayload(action.id, { executed: allowed, origin });
+    }
 
     await setLocal('pendingPreview', null);
     const updated = (await updateActionStatus(action.id, 'applied')) ?? action;
