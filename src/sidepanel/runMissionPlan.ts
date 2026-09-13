@@ -1,4 +1,5 @@
 import { checkMandate } from '../shared/riskClassifier';
+import { firstUnmetRequirement } from './mustHave';
 import { parsePrice } from '../shared/dom/price';
 import type { AgentState } from '../shared/types/agentState';
 import type { CompareResult } from '../shared/types/compare';
@@ -22,6 +23,8 @@ export interface RunMissionIO {
   compare(objectAId: string, objectBId: string): Promise<LumiResult<CompareResult>>;
   hasChat(): Promise<boolean>;
   offer(objectId: string): Promise<LumiResult<unknown>>;
+  /** Drops a remembered object again — a card Lumi refuses must not stay in memory. */
+  forget(objectId: string): Promise<void>;
   narrate(state: AgentState, message: string): Promise<void>;
   pause(ms: number): Promise<void>;
   cancelled(): boolean;
@@ -58,6 +61,10 @@ function plural(n: number, word: string): string {
   return n === 1 ? `1 ${word}` : `${n} ${word}s`;
 }
 
+function quote(s: string): string {
+  return `\u201c${s}\u201d`;
+}
+
 /**
  * Runs the mission end to end over the tools Lumi already has: read the page, look at
  * each card in turn, refuse the ones the mandate rules out, score and compare what is
@@ -79,6 +86,7 @@ export async function runMission(io: RunMissionIO, mission: Mission | null): Pro
     return { status: 'stopped', message: 'Stopped.' };
   };
 
+  console.info('[run-mission] mandate', mission?.mandate ?? '(none)');
   await io.narrate('thinking', 'Reading this page…');
   const context = await io.readPageContext();
   if (!context.ok) return stop(context.error);
@@ -98,15 +106,44 @@ export async function runMission(io: RunMissionIO, mission: Mission | null): Pro
     if (io.cancelled()) return cancelledOutcome();
 
     await io.highlight(card.selector);
+    // Pinning first is what gives us the full card text to judge; a card that then fails
+    // the mandate is forgotten again below, so memory only ever holds what Lumi accepted.
     const pinned = await io.pin(card.selector);
     if (!pinned.ok) return stop(pinned.error);
 
+    // The snapshot's text is the whole card (innerText, capped at 600 chars). The page
+    // context's card carries only a label and a price, which is not enough to judge a
+    // must-have against — checking that instead refuses everything.
+    const text = pinned.data.text;
     const price = parsePrice(card.price ?? pinned.data.extracted.price ?? null);
-    const verdict = checkMandate({ price, text: pinned.data.text }, mission);
-    if (!verdict.ok) {
+
+    // Price stays with the strict shared check. The must-have is matched tolerantly here,
+    // because "16 GB RAM" has to match a card that says "16 GB DDR5".
+    const priceVerdict = checkMandate({ price }, mission);
+    const unmet = priceVerdict.ok ? firstUnmetRequirement(mission?.mandate?.mustHave ?? [], text) : null;
+    const reason = !priceVerdict.ok
+      ? priceVerdict.reason
+      : unmet
+        ? `I can’t confirm ${quote(unmet.requirement)} on this one${unmet.missing.length > 0 ? ` — no ${unmet.missing.join(', ')}` : ''}, and you told me that’s non-negotiable.`
+        : null;
+
+    // Logged so a live run can be debugged from the side panel console without guessing.
+    console.info('[run-mission]', card.label, {
+      price,
+      rawPrice: card.price ?? pinned.data.extracted.price ?? null,
+      textLength: text.length,
+      text: text.slice(0, 200),
+      mustHave: mission?.mandate?.mustHave ?? [],
+      missing: unmet?.missing ?? [],
+      verdict: reason ? 'REFUSE' : 'KEEP',
+      reason,
+    });
+
+    if (reason) {
       refused += 1;
+      await io.forget(pinned.data.id);
       // The refusal is the interesting moment — hold it on screen with the card still lit.
-      await io.narrate('warning', verdict.reason);
+      await io.narrate('warning', reason);
       await io.pause(STEP_PAUSE_MS);
       continue;
     }

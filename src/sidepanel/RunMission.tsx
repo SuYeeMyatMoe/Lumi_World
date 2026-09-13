@@ -25,6 +25,9 @@ function chromeIO(tabId: number, cancelled: () => boolean): RunMissionIO {
     compare: (objectAId, objectBId) => sendMessage({ type: 'REQUEST_COMPARE', objectAId, objectBId }),
     hasChat: async () => (await sendTabMessage(tabId, { type: 'READ_CHAT', selector: '' })).ok,
     offer: (objectId) => sendMessage({ type: 'REQUEST_OFFER', objectId }),
+    forget: async (objectId) => {
+      await sendMessage({ type: 'REMOVE_MEMORY_ITEM', id: objectId });
+    },
     narrate: async (state: AgentState, message: string) => {
       await sendMessage({ type: 'SET_AGENT_STATE', state, message });
     },
