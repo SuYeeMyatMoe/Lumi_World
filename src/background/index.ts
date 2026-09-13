@@ -340,7 +340,20 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     return { ok: true, data: null };
   },
 
+  // The user gesture behind this message survives only until the first await, so
+  // sidePanel.open() has to be started before anything else — otherwise Chrome rejects
+  // it with "may only be called in response to a user gesture". Start it first, settle
+  // it last, and surface the failure instead of swallowing it.
   async OPEN_SIDE_PANEL(_msg, sender) {
+    const tabId = sender.tab?.id;
+    const windowId = sender.tab?.windowId;
+    if (tabId === undefined && windowId === undefined) {
+      return { ok: false, code: 'NO_TAB', error: 'No tab to open Lumi in.' };
+    }
+    // Opening for the calling tab is the form that reliably keeps the click's user
+    // activation; windowId is only a fallback for senders without a tab id.
+    const opening = tabId !== undefined ? chrome.sidePanel.open({ tabId }) : chrome.sidePanel.open({ windowId: windowId! });
+
     const url = sender.tab?.url;
     if (url) {
       try {
@@ -349,9 +362,17 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
         /* chrome:// and other non-http tabs */
       }
     }
-    const windowId = sender.tab?.windowId;
-    if (windowId !== undefined) {
-      await chrome.sidePanel.open({ windowId }).catch(() => {});
+
+    try {
+      await opening;
+    } catch (err) {
+      // Surfaced into the mascot bubble as well as the worker console: a silent failure
+      // here is what made this bug take so long to find.
+      const detail = err instanceof Error ? err.message : String(err);
+      console.warn('[Lumi] sidePanel.open failed:', detail);
+      await setAgentState('warning', `Lumi Space blocked: ${detail}`);
+      setTimeout(() => settleToIdle(), 8000);
+      return { ok: false, code: 'UNKNOWN', error: detail };
     }
     return { ok: true, data: null };
   },
