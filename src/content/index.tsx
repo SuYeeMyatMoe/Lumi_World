@@ -23,9 +23,14 @@ registerMessageHandlers<TabMessage, TabResponseMap>({
     }
     return { ok: true, data: { applied } };
   },
-  // Stub — filled in by the Execution layer (CLAUDE.md 4.2).
-  SUBMIT_FORM() {
-    return { ok: false, code: 'UNKNOWN', error: 'not implemented' };
+  // The last step of an approved high-risk action. requestSubmit() rather than submit()
+  // so the page's own validation and submit handler still run, exactly as a click would.
+  SUBMIT_FORM(msg) {
+    const el = resolveSelector(msg.selector);
+    const form = el instanceof HTMLFormElement ? el : (el?.closest('form') ?? null);
+    if (!form) return { ok: false, code: 'UNKNOWN', error: 'Could not find that form on the page.' };
+    form.requestSubmit();
+    return { ok: true, data: { submitted: true } };
   },
   // Stubs — filled in by the Negotiation layer (CLAUDE.md 4.3).
   READ_CHAT() {

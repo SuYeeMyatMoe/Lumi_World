@@ -33,7 +33,7 @@ export type RuntimeMessage =
   | { type: 'REQUEST_SCORE'; objectId: string }
   | { type: 'REQUEST_FORM_FILL' }
   | { type: 'REQUEST_OFFER'; objectId: string }
-  | { type: 'REQUEST_HIGH_RISK_DEMO' }
+  | { type: 'REQUEST_SUBMIT' }
   | { type: 'APPLY_ACTION'; actionId: string }
   | { type: 'REJECT_ACTION'; actionId: string }
   | { type: 'SET_AGENT_STATE'; state: AgentState; message?: string }
@@ -61,7 +61,7 @@ export type RuntimeResponseMap = {
   REQUEST_SCORE: LumiResult<LumiFocusSnapshot>;
   REQUEST_FORM_FILL: LumiResult<LumiPreview>;
   REQUEST_OFFER: LumiResult<LumiPreview>;
-  REQUEST_HIGH_RISK_DEMO: LumiResult<AgentAction>;
+  REQUEST_SUBMIT: LumiResult<AgentAction>;
   APPLY_ACTION: LumiResult<AgentAction>;
   REJECT_ACTION: LumiResult<AgentAction>;
   SET_AGENT_STATE: LumiResult<null>;
