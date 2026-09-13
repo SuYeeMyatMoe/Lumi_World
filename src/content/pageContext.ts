@@ -1,5 +1,6 @@
 import type { PageCard, PageContext } from '../shared/types/pageContext';
 import { findPriceText } from '../shared/dom/price';
+import { buildSelector } from '../shared/dom/selector';
 
 // Mirrors the heuristics in shared/dom/elementSnapshot.ts on purpose: the same idea of
 // "what counts as a card" and "what counts as a price" must hold for a hovered element
@@ -67,7 +68,7 @@ export function readPageContext(): PageContext {
 
     seen.add(label);
     captured.push(el);
-    cards.push({ label, price });
+    cards.push({ label, price, selector: buildSelector(el) });
   }
 
   return { title: clean(document.title), url: location.href, headings, cards };
