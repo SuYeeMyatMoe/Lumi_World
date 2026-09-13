@@ -165,7 +165,14 @@ export async function runMission(io: RunMissionIO, mission: Mission | null): Pro
     if (io.cancelled()) return cancelledOutcome();
     await io.narrate('thinking', `Scoring ${item.extracted.label ?? 'this one'}…`);
     const result = await io.score(item.id);
-    if (!result.ok) return stop(result.error);
+    if (!result.ok) {
+      // One scoring call failing is not a reason to abandon a run that has already done
+      // the hard part. Keep the card unscored — rankByScore sorts it last — and carry on.
+      console.warn('[run-mission] score failed', item.extracted.label, result.code, result.error);
+      scored.push(item);
+      await io.pause(STEP_PAUSE_MS);
+      continue;
+    }
     scored.push(result.data);
     await io.pause(STEP_PAUSE_MS);
   }
@@ -177,8 +184,16 @@ export async function runMission(io: RunMissionIO, mission: Mission | null): Pro
     if (io.cancelled()) return cancelledOutcome();
     await io.narrate('thinking', 'Comparing the top two…');
     const comparison = await io.compare(ranked[0].id, ranked[1].id);
-    if (!comparison.ok) return stop(comparison.error);
-    winner = comparison.data.winner === 'B' ? ranked[1] : ranked[0];
+    if (comparison.ok) {
+      winner = comparison.data.winner === 'B' ? ranked[1] : ranked[0];
+    } else {
+      // Compare is the fourth model call in a row, so it is the one a rate limit or a
+      // dropped connection tends to hit. Stopping here threw away a run that had already
+      // read, judged and scored every card, one step short of the negotiation. The scores
+      // are enough to pick a winner, so say what happened and keep going.
+      console.warn('[run-mission] compare failed', comparison.code, comparison.error);
+      await io.narrate('warning', `I couldn’t compare them (${comparison.error}) — going with the best score.`);
+    }
     await io.pause(STEP_PAUSE_MS);
   }
 
