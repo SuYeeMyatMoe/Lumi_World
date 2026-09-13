@@ -50,6 +50,9 @@ export function OptionsApp() {
   // defaults in storage.ts, so this never drifts from them.
   const resetDemoState = async () => {
     await chrome.storage.local.remove(DEMO_STATE_KEYS);
+    // Drop the live state too, so the mascot's pose, bubble and last focus go with it
+    // rather than surviving a reset and describing a run that no longer exists.
+    await chrome.storage.session.remove('liveAgentState');
     await sendMessage({ type: 'SET_AGENT_STATE', state: 'idle' });
     setReset(true);
     setTimeout(() => setReset(false), 1800);

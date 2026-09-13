@@ -37,7 +37,7 @@ export function TrustPanel() {
   return (
     <section className="lumi-card">
       <span className="lumi-label">Lumi Trust</span>
-      <p className="mb-2 mt-1 text-xs text-lumi-muted">Every action is risk-classified in code. Lumi previews before it acts.</p>
+      <p className="mb-2 mt-1 text-xs text-lumi-muted">Limits are enforced in code. Lumi previews before it acts and refuses rather than exceeds them.</p>
 
       <div className="mb-3 grid grid-cols-3 gap-1 text-center text-[10px]">
         <div className="rounded-md border border-lumi-success/30 py-1 text-lumi-success">
