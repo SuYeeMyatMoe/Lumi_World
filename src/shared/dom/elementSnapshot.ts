@@ -1,11 +1,7 @@
 import type { LumiFocusSnapshot } from '../types/lumiFocus';
 import { buildSelector } from './selector';
 import { isSensitiveField } from './sensitiveFieldGuard';
-import { PRICE_PATTERN } from './price';
-
-// Re-exported for modules that still import the pattern from here (chatSurfaceDetector).
-// price.ts is the definition; this keeps the two branches importing the same symbol.
-export { PRICE_PATTERN };
+import { findPriceText } from './price';
 
 export type PartialSnapshot = Omit<LumiFocusSnapshot, 'id' | 'createdAt' | 'tabId' | 'tabUrl' | 'tabTitle'>;
 
@@ -76,7 +72,7 @@ export function createSnapshot(el: Element): PartialSnapshot | null {
   if (name) attributes.name = name;
   if (title) attributes.title = title;
 
-  const priceMatch = text.match(PRICE_PATTERN);
+  const priceMatch = findPriceText(text);
   const heading = el.querySelector('h1, h2, h3, h4, h5, h6, [role="heading"]')?.textContent?.replace(/\s+/g, ' ').trim();
   const firstLine =
     (heading && heading.length <= 120 ? heading : undefined) ??
@@ -91,7 +87,7 @@ export function createSnapshot(el: Element): PartialSnapshot | null {
     boundingRect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
     extracted: {
       label: firstLine ?? ariaLabel ?? alt ?? undefined,
-      price: priceMatch?.[0],
+      price: priceMatch ?? undefined,
     },
   };
 }

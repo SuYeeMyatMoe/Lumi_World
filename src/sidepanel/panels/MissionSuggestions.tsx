@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { sendMessage } from '../../shared/messaging/sendMessage';
-import { setLocal } from '../../shared/storage/storage';
-import { uid } from '../../shared/constants';
 import type { MissionSuggestions as Suggestions } from '../../shared/types/pageContext';
 
 // Replaces the static example missions: Lumi reads the page the user is actually on
@@ -25,10 +23,12 @@ export function MissionSuggestions({ onPick }: { onPick?: (goal: string) => void
     setResult(response.data);
   };
 
-  // TODO(mandate): once PARSE_MISSION lands, send the goal there instead so the
-  // mandate (ceiling, must-haves) is parsed out of it rather than stored raw.
+  // Goes through PARSE_MISSION so a picked suggestion gets the same mandate treatment
+  // as a typed one: the ceiling and must-haves are extracted and enforced in code.
+  // The background stores the plain goal if the parse fails, so this never loses the pick.
   const pick = async (goal: string) => {
-    await setLocal('mission', { id: uid('mission'), goal, createdAt: Date.now(), status: 'active' });
+    const response = await sendMessage({ type: 'PARSE_MISSION', goal });
+    if (!response.ok) setError(response.error);
     onPick?.(goal);
   };
 

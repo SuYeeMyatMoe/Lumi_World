@@ -1,4 +1,5 @@
 import type { PageCard, PageContext } from '../shared/types/pageContext';
+import { findPriceText } from '../shared/dom/price';
 
 // Mirrors the heuristics in shared/dom/elementSnapshot.ts on purpose: the same idea of
 // "what counts as a card" and "what counts as a price" must hold for a hovered element
@@ -7,18 +8,12 @@ const CARD_SELECTOR = 'article, li, tr, figure, [role="listitem"], [role="articl
 const CARD_CLASS = /\b(card|product|item|tile|result|listing|entry|post|row)\b/i;
 const HEADING_SELECTOR = 'h1, h2, h3, h4, h5, h6, [role="heading"]';
 
-// Split out of elementSnapshot.ts's single alternation, and tried prefix-first on purpose:
-// the combined pattern matches the "15 RM" inside "ASUS TUF A15 RM 3,899", because its
-// suffix branch hits an earlier index than the real price. Prefix form must win here.
-const PRICE_PREFIXED = /(?:RM|MYR|USD|US\$|\$|€|£|¥|SGD|S\$)\s?\d[\d,]*(?:\.\d{1,2})?/i;
-const PRICE_SUFFIXED = /(?<![A-Za-z0-9])\d[\d,]*(?:\.\d{1,2})?\s?(?:RM|MYR|USD|SGD)\b/i;
-
 const MAX_HEADINGS = 5;
 const MAX_CARDS = 6;
 const MAX_LABEL = 120;
 
 function findPrice(text: string): string | null {
-  return text.match(PRICE_PREFIXED)?.[0] ?? text.match(PRICE_SUFFIXED)?.[0] ?? null;
+  return findPriceText(text);
 }
 
 function clean(s: string | null | undefined): string {
