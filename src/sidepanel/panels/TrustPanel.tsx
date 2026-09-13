@@ -29,7 +29,7 @@ export function TrustPanel() {
   const run = async (kind: 'fill' | 'high') => {
     setBusy(kind);
     setError(null);
-    const r = kind === 'fill' ? await sendMessage({ type: 'REQUEST_FORM_FILL' }) : await sendMessage({ type: 'REQUEST_HIGH_RISK_DEMO' });
+    const r = kind === 'fill' ? await sendMessage({ type: 'REQUEST_FORM_FILL' }) : await sendMessage({ type: 'REQUEST_SUBMIT' });
     if (!r.ok) setError(r.error);
     setBusy(null);
   };
@@ -62,7 +62,7 @@ export function TrustPanel() {
           {busy === 'fill' ? 'Reading form…' : 'Fill form from memory'}
         </button>
         <button className="lumi-btn flex-1 !border-lumi-danger/40" onClick={() => run('high')} disabled={busy !== null || !!pending}>
-          Simulate high-risk
+          Place order
         </button>
       </div>
       {error && <p className="mt-2 text-[11px] text-lumi-warn">{error}</p>}
@@ -100,7 +100,7 @@ export function TrustPanel() {
                 <div className="min-w-0">
                   <p className="truncate text-[11.5px]">{a.label}</p>
                   <p className="text-[10px] text-lumi-muted">
-                    {STATUS_LABEL[a.status]} · {timeAgo(a.createdAt)}
+                    {STATUS_LABEL[a.status]}{executionNote(a)} · {timeAgo(a.createdAt)}
                   </p>
                 </div>
                 <span className={`lumi-chip shrink-0 ${RISK_STYLE[a.risk]}`}>{a.risk}</span>
@@ -111,6 +111,13 @@ export function TrustPanel() {
       </div>
     </section>
   );
+}
+
+// A high-risk action that was approved either reached the page or did not. Saying which
+// is the whole point of the origin gate, so the activity row says it outright.
+function executionNote(a: AgentAction): string {
+  if (a.type !== 'submit' || typeof a.payload?.executed !== 'boolean') return '';
+  return a.payload.executed ? ' · executed' : ' · recorded';
 }
 
 function timeAgo(ts: number): string {

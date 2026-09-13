@@ -107,6 +107,23 @@ export function OptionsApp() {
         )}
       </section>
 
+      <section className="lumi-card mt-4">
+        <span className="lumi-label text-lumi-danger">High-risk execution</span>
+        <p className="mb-3 mt-1 text-xs text-lumi-muted">
+          High-risk actions execute only on these origins; everywhere else they are gated.
+        </p>
+        <ul className="space-y-1">
+          {settings.executeHighRiskOrigins.map((o) => (
+            <li key={o} className="rounded-md border border-lumi-border bg-black/20 px-2 py-1.5 font-mono text-xs">
+              {o}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-[11px] text-lumi-muted">
+          Read-only. Approving a high-risk action anywhere else records the approval without touching the page.
+        </p>
+      </section>
+
       <div className="mt-6 flex items-center gap-3">
         <button className="lumi-btn-primary" onClick={save}>
           Save
