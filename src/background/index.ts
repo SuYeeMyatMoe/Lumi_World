@@ -4,16 +4,18 @@ import { getLocal, setLocal, updateLocal } from '../shared/storage/storage';
 import type { RuntimeMessage, RuntimeResponseMap } from '../shared/types/messages';
 import type { LumiFocusSnapshot } from '../shared/types/lumiFocus';
 import type { CompareResult } from '../shared/types/compare';
+import type { AgentAction } from '../shared/types/agentAction';
 import type { LumiPreview } from '../shared/types/lumiPreview';
 import type { Mandate, Mission } from '../shared/types/mission';
 import { LUMI_MEMORY_CAP } from '../shared/types/lumiMemory';
 import { LUMI_VOICE, uid } from '../shared/constants';
 import { callTool } from './openaiClient';
-import { compareResultSchema, formFillSchema, mandateSchema, scoreResultSchema } from './toolSchemas';
+import { compareResultSchema, formFillSchema, mandateSchema, offerSchema, scoreResultSchema } from './toolSchemas';
 import { flashSuccess, setAgentState, setFocusPos, settleToIdle } from './agentState';
 import { createAction, findAction, updateActionStatus } from './actionLog';
 import { checkMandate } from '../shared/riskClassifier';
-import { parseAmountLoose, parsePrice } from '../shared/dom/price';
+import { parseAmountLoose, parseLastPrice, parsePrice } from '../shared/dom/price';
+import { lastCounterpartPrice } from '../shared/dom/chatSurfaceDetector';
 import { showOverlay } from '../shared/overlayVisibility';
 
 // Content scripts are "untrusted contexts" for storage.session; grant access so the
@@ -37,6 +39,18 @@ function describeObject(o: LumiFocusSnapshot, tag: string): string {
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+// The tighter of ceiling and walk-away is the number that actually binds.
+function bindingLimit(mission: Mission | null): number | null {
+  const m = mission?.mandate;
+  if (!m) return null;
+  if (m.ceiling !== null && m.walkAway !== null) return Math.min(m.ceiling, m.walkAway);
+  return m.walkAway ?? m.ceiling;
+}
+
+function money(value: number, currency: string | null | undefined): string {
+  return `${currency ?? 'RM'}${value.toLocaleString('en-US')}`;
 }
 
 function describeMandate(mandate: Mandate | undefined): string | null {
@@ -75,6 +89,33 @@ function findMandateSubject(values: string[], items: LumiFocusSnapshot[]): LumiF
 async function activeTabId(): Promise<number | null> {
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   return tab?.id ?? null;
+}
+
+// After an offer is sent, read the seller's reply and write the outcome the fallback
+// layer watches: agreed when the standing price is within the mandate, walked-away when
+// the seller's own final number stays above it.
+async function recordNegotiationOutcome(tabId: number, action: AgentAction): Promise<void> {
+  const objectId = typeof action.payload?.objectId === 'string' ? action.payload.objectId : '';
+  if (!objectId) return;
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  const after = await sendTabMessage(tabId, { type: 'READ_CHAT', selector: '' });
+  if (!after.ok) return;
+
+  const mission = await getLocal('mission');
+  const limit = bindingLimit(mission);
+  const price = lastCounterpartPrice(after.data.transcript);
+  const accepted = /\b(deal|agreed|accept)/i.test(after.data.transcript);
+
+  if (price === null) return;
+  const withinMandate = limit === null || price <= limit;
+
+  if (accepted && withinMandate) {
+    await setLocal('negotiationOutcome', { objectId, outcome: 'agreed', agreedPrice: price, ceiling: limit, updatedAt: Date.now() });
+    return;
+  }
+  if (!withinMandate) {
+    await setLocal('negotiationOutcome', { objectId, outcome: 'walked-away', ceiling: limit, updatedAt: Date.now() });
+  }
 }
 
 registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
@@ -281,9 +322,92 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     return { ok: true, data: preview };
   },
 
-  // Stub — filled in by the Negotiation layer (CLAUDE.md 4.3).
-  async REQUEST_OFFER() {
-    return { ok: false, code: 'UNKNOWN', error: 'not implemented' };
+  // Drafts the next message in a negotiation. The seller's standing counter is checked
+  // against the mandate in code first: if it is already above the limit Lumi refuses
+  // without calling the model at all, so the refusal cannot be talked out of.
+  async REQUEST_OFFER(msg) {
+    const tabId = await activeTabId();
+    if (tabId === null) return { ok: false, code: 'NO_TAB', error: 'No active tab.' };
+
+    const mem = await getLocal('lumiMemory');
+    const obj = mem.items.find((i) => i.id === msg.objectId);
+    if (!obj) return { ok: false, code: 'UNKNOWN', error: 'That object is no longer in Lumi Memory.' };
+
+    const chat = await sendTabMessage(tabId, { type: 'READ_CHAT', selector: '' });
+    if (!chat.ok) return chat;
+    const { transcript, inputSelector, sendSelector } = chat.data;
+
+    const mission = await getLocal('mission');
+    const limit = bindingLimit(mission);
+    const currency = mission?.mandate?.currency ?? null;
+
+    // An opening asking price above the mandate is not a refusal — it is the reason to
+    // negotiate. A COUNTER above the mandate is refused: Lumi says so, and either stops
+    // (the seller called it final, so there is nothing left to win) or counters at the
+    // limit. Turn counting is what separates "their first ask" from "their answer to us".
+    const sellerTurns = transcript.split('\n').filter((line) => line.trim().length > 0).length;
+    const lastSellerLine = transcript.split('\n').filter(Boolean).pop() ?? '';
+    const counter = lastCounterpartPrice(transcript);
+    let refusalNote: string | null = null;
+
+    if (counter !== null && sellerTurns >= 2) {
+      const verdict = checkMandate({ price: counter }, mission);
+      if (!verdict.ok) {
+        refusalNote = verdict.reason;
+        await createAction('send-offer', `Refused to meet ${money(counter, currency)}`, { tabId, targetSelector: inputSelector }, 'refused');
+        await setAgentState('warning', verdict.reason);
+        if (/\bfinal\b|\blast (?:price|offer)\b|best i can/i.test(lastSellerLine)) {
+          await setLocal('negotiationOutcome', { objectId: obj.id, outcome: 'walked-away', ceiling: limit, updatedAt: Date.now() });
+          setTimeout(() => settleToIdle(), 6000);
+          return { ok: false, code: 'REFUSED', error: verdict.reason };
+        }
+      }
+    }
+
+    await setAgentState('thinking', LUMI_VOICE.thinking);
+    const result = await callTool({
+      tool: 'proposeOffer',
+      schema: offerSchema,
+      userContent: [
+        await missionContext(),
+        '',
+        `You are negotiating for: ${describeObject(obj, 'TARGET')}`,
+        '',
+        `Seller's messages so far:\n${transcript || '(no messages yet)'}`,
+        '',
+        limit !== null ? `Hard limit: never offer more than ${limit}.` : 'No budget limit was stated.',
+        'Propose the next offer.',
+      ].join('\n'),
+    });
+
+    if (!result.ok) {
+      await setAgentState('warning', result.code === 'NO_API_KEY' ? LUMI_VOICE.noKey : LUMI_VOICE.uncertain);
+      setTimeout(() => settleToIdle(), 2500);
+      return result;
+    }
+
+    // Clamp in code. The model is a drafter, not the thing that decides the number.
+    const amount = limit !== null ? Math.min(result.data.amount, limit) : result.data.amount;
+    const stated = parseLastPrice(result.data.message);
+    const text = stated === amount ? result.data.message : `Could you do ${money(amount, currency)}?`;
+
+    const action = await createAction('send-offer', `Offer ${money(amount, currency)}`, {
+      tabId,
+      targetSelector: inputSelector,
+      payload: { amount, sendSelector, objectId: obj.id },
+    });
+    const preview: LumiPreview = {
+      actionId: action.id,
+      tabId,
+      changes: [{ selector: inputSelector, label: 'Message to seller', currentValue: '', proposedValue: text }],
+      rationale: refusalNote ? `${refusalNote} Countering at my limit instead.` : result.data.rationale,
+      protectedFieldCount: 0,
+    };
+    await setLocal('pendingPreview', preview);
+    await updateActionStatus(action.id, 'previewed');
+    // Keep the refusal on screen when there was one: it is the point being made.
+    await setAgentState('warning', refusalNote ?? LUMI_VOICE.needsApproval);
+    return { ok: true, data: preview };
   },
 
   async REQUEST_HIGH_RISK_DEMO() {
@@ -318,6 +442,23 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
         return { ok: false, code: 'NO_TAB', error: 'Could not reach the page to apply changes. Is the tab still open?' };
       }
     }
+    // An approved offer is typed into the composer and then sent, and the seller's
+    // reply is read back so the outcome is recorded for the fallback layer.
+    if (action.type === 'send-offer' && preview?.actionId === action.id) {
+      const applied = await sendTabMessage(preview.tabId, {
+        type: 'APPLY_FIELD_VALUES',
+        changes: preview.changes.map((c) => ({ selector: c.selector, value: c.proposedValue })),
+      });
+      if (!applied.ok) {
+        await setLocal('pendingPreview', null);
+        await settleToIdle();
+        return { ok: false, code: 'NO_TAB', error: 'Could not reach the chat to send the offer.' };
+      }
+      const sendSelector = typeof action.payload?.sendSelector === 'string' ? action.payload.sendSelector : '';
+      if (sendSelector) await sendTabMessage(preview.tabId, { type: 'CLICK_SELECTOR', selector: sendSelector });
+      await recordNegotiationOutcome(preview.tabId, action);
+    }
+
     // High-risk demo actions (submit) are intentionally NOT executed against the page;
     // the gate itself is the deliverable. Only the approval is recorded.
 

@@ -29,10 +29,17 @@ export const mandateSchema = z.object({
   walkAway: z.number().nullish(),
 });
 
+export const offerSchema = z.object({
+  message: z.string(),
+  amount: z.number(),
+  rationale: z.string(),
+});
+
 export type CompareToolResult = z.infer<typeof compareResultSchema>;
 export type ScoreToolResult = z.infer<typeof scoreResultSchema>;
 export type FormFillToolResult = z.infer<typeof formFillSchema>;
 export type MandateToolResult = z.infer<typeof mandateSchema>;
+export type OfferToolResult = z.infer<typeof offerSchema>;
 
 export const TOOLS = {
   compareLumiFocusObjects: {
@@ -91,6 +98,24 @@ export const TOOLS = {
           walkAway: { type: ['number', 'null'], description: 'Price above which the user said to walk away. Null if unstated; often equal to the ceiling.' },
         },
         required: ['goal', 'mustHave', 'ceiling', 'currency', 'walkAway'],
+        additionalProperties: false,
+      },
+    },
+  },
+  proposeOffer: {
+    type: 'function' as const,
+    function: {
+      name: 'proposeOffer',
+      description:
+        'Draft the next message in a price negotiation. Never exceed the mandate ceiling: the amount is clamped in code afterwards, so proposing more only wastes the turn. State the amount plainly in the message so the seller can read it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          message: { type: 'string', description: 'The message to send, one or two short sentences, polite and direct. It must contain the amount written as RM followed by the number.' },
+          amount: { type: 'number', description: 'The amount being offered, as a plain number with no currency or separators.' },
+          rationale: { type: 'string', description: 'One sentence for the user explaining why this amount, grounded in the object and the transcript.' },
+        },
+        required: ['message', 'amount', 'rationale'],
         additionalProperties: false,
       },
     },

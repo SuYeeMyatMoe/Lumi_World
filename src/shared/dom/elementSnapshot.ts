@@ -3,6 +3,10 @@ import { buildSelector } from './selector';
 import { isSensitiveField } from './sensitiveFieldGuard';
 import { PRICE_PATTERN } from './price';
 
+// Re-exported for modules that still import the pattern from here (chatSurfaceDetector).
+// price.ts is the definition; this keeps the two branches importing the same symbol.
+export { PRICE_PATTERN };
+
 export type PartialSnapshot = Omit<LumiFocusSnapshot, 'id' | 'createdAt' | 'tabId' | 'tabUrl' | 'tabTitle'>;
 
 const MAX_TEXT = 600;
