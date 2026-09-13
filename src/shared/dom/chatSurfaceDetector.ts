@@ -1,4 +1,4 @@
-import { PRICE_PATTERN } from './elementSnapshot';
+import { parseLastPrice } from './price';
 import { buildSelector } from './selector';
 import { isSensitiveField } from './sensitiveFieldGuard';
 
@@ -56,14 +56,7 @@ export function resolveChatSurface(root: ParentNode = document): ChatSurface | n
 
 /** Last price mentioned in a chat transcript — the counterpart's standing counter. */
 export function lastCounterpartPrice(transcriptText: string): number | null {
-  if (!transcriptText) return null;
-  const all = transcriptText.match(new RegExp(PRICE_PATTERN.source, 'gi'));
-  const last = all?.[all.length - 1];
-  if (!last) return null;
-  const digits = last.replace(/[^\d.]/g, '');
-  if (!digits || digits === '.') return null;
-  const value = Number.parseFloat(digits);
-  return Number.isFinite(value) ? value : null;
+  return parseLastPrice(transcriptText);
 }
 
 function chatInputCandidates(root: ParentNode): HTMLElement[] {
