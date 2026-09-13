@@ -1,12 +1,13 @@
-// Dev-only: mounts the content overlay on the demo page when the unpacked extension
-// is not already injecting. Wait briefly so the real content script can win on
-// localhost — otherwise the demo shim shows Lumi here while other websites stay empty.
+// Dev-only: mounts the content overlay on a plain page, opt-in via ?preview=1.
+// Never mounts on the demo page by itself — on localhost the real content script is
+// already injecting, and a second mount races it and shadows the extension (the mascot
+// click opens a tab instead of the side panel).
 import { installDevShim } from '../shared/devShim';
 
 const HOST_ID = 'lumi-world-host';
 
 function isDemoPage(): boolean {
-  return /\/demo\/index\.html$/i.test(location.pathname) || location.search.includes('preview=1');
+  return location.search.includes('preview=1');
 }
 
 function mountDemoPreview() {
