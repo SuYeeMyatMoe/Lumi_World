@@ -13,7 +13,15 @@ export function useLocalStorage<K extends LocalKey>(key: K): LocalStorageSchema[
     const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
       if (area !== 'local' || !(key in changes)) return;
       const next = changes[key].newValue;
-      setValue((next === undefined ? localDefault(key) : next) as LocalStorageSchema[K]);
+      if (next === undefined) {
+        setValue(localDefault(key));
+        return;
+      }
+      if (key === 'hiddenOrigins' && !Array.isArray(next)) {
+        setValue([] as unknown as LocalStorageSchema[K]);
+        return;
+      }
+      setValue(next as LocalStorageSchema[K]);
     };
     chrome.storage.onChanged.addListener(listener);
     return () => {

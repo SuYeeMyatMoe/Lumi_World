@@ -75,14 +75,21 @@ export function ContentApp({ shadowHost }: Props) {
     e?.preventDefault();
     e?.stopPropagation();
     void showOverlay();
-    if (tabId !== null && chrome.sidePanel?.open) {
-      void chrome.sidePanel.open({ tabId }).catch(() => {
-        void sendMessage({ type: 'OPEN_SIDE_PANEL' });
-      });
-      return;
+    try {
+      if (tabId !== null && chrome.sidePanel?.open) {
+        void chrome.sidePanel.open({ tabId }).catch(() => {
+          void sendMessage({ type: 'OPEN_SIDE_PANEL' });
+        });
+        return;
+      }
+    } catch {
+      /* sidePanel may be missing in preview or after a reload */
     }
     void sendMessage({ type: 'OPEN_SIDE_PANEL' });
   }, [tabId]);
+
+  const openSidePanelRef = useRef(openSidePanel);
+  openSidePanelRef.current = openSidePanel;
 
   useEffect(() => {
     if (!overlayVisible) {
@@ -97,10 +104,10 @@ export function ContentApp({ shadowHost }: Props) {
         reportHover(el);
       },
       onPinRequest: pin,
-      onOpenPanel: () => openSidePanel(),
+      onOpenPanel: () => openSidePanelRef.current(),
     });
     return stop;
-  }, [shadowHost, reportHover, pin, overlayVisible, openSidePanel]);
+  }, [shadowHost, reportHover, pin, overlayVisible]);
 
   // "Show on page" from the side panel: flash the remembered element.
   useEffect(() => {

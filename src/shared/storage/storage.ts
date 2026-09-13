@@ -20,7 +20,9 @@ const sessionDefaults: SessionStorageSchema = {
 export async function getLocal<K extends LocalKey>(key: K): Promise<LocalStorageSchema[K]> {
   const result = await chrome.storage.local.get(key);
   const value = result[key];
-  return (value === undefined ? localDefaults[key] : value) as LocalStorageSchema[K];
+  if (value === undefined) return localDefaults[key];
+  if (key === 'hiddenOrigins' && !Array.isArray(value)) return [] as unknown as LocalStorageSchema[K];
+  return value as LocalStorageSchema[K];
 }
 
 export async function setLocal<K extends LocalKey>(key: K, value: LocalStorageSchema[K]): Promise<void> {

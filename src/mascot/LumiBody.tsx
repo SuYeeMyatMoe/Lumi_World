@@ -21,7 +21,7 @@ export function LumiBody({ state, lookRef }: Props) {
   const ringRef = useRef<THREE.Group>(null);
   const bounceRef = useRef({ lastState: state, t: 0 });
 
-  const config = STATE_CONFIG[state];
+  const config = STATE_CONFIG[state] ?? STATE_CONFIG.idle;
   const coreColor = useMemo(() => new THREE.Color(config.coreColor), [config.coreColor]);
   const bodyColor = useMemo(() => new THREE.Color(config.bodyColor), [config.bodyColor]);
 
