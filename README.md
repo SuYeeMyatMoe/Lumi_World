@@ -146,32 +146,28 @@ What is real and what is staged, stated plainly:
 
 ## Built during the hackathon
 
-The build window was 11:15–15:30 on 13 September 2026. Commit times below are local, straight from `git log` — regenerate with:
+The build window was 11:15–15:30 on 13 September 2026. **All times below are Kuala Lumpur time (UTC+8)**, the event's local time. The base commits were authored on a `+0630` clock, so a plain `git log` renders them 90 minutes earlier; regenerate this table with:
 
 ```bash
-git log --format='%h %ad %an %s' --date=format:'%H:%M'
+TZ=Asia/Kuala_Lumpur git log --date=format-local:'%H:%M' --format='%h %ad %an %s'
 ```
 
-**Before the window (pre-event base).** The Lumi World MVP — mascot, focus engine, memory, compare/score/fill tools, preview overlay, risk table, side panel, demo store — was built before the event and imported with its real commits:
-
 ```
-0b13aeb 10:00 SuYeeMyatMoe  first commit
-996be88 10:13 SuYeeMyatMoe  Close Button
-84560ac 10:30 SuYeeMyatMoe  overlay problem fix
-c1c7b3e 10:41 SuYeeMyatMoe  Website Lumi
-```
-
-**During the window.** Everything from 12:14 onward was written at the event:
-
-```
+0b13aeb 11:30 SuYeeMyatMoe    first commit
+996be88 11:43 SuYeeMyatMoe    Close Button
+84560ac 12:00 SuYeeMyatMoe    overlay problem fix
+c1c7b3e 12:11 SuYeeMyatMoe    Website Lumi
 99a5c90 12:14 kaylaelishevaa  docs: add CLAUDE.md
 5237490 12:18 kaylaelishevaa  feat(contract): types and stub handlers for mandate, execution and negotiation
 a3d5ec1 12:39 kaylaelishevaa  feat(negotiate): chat surface detector with fixed-selector and heuristic paths
+f21eb4a 12:42 kaylaelishevaa  docs: README, video script, submission pack
 ```
 
-_This list stops at the last commit on `main` when the README was written (12:39). Re-run the command above before submitting and paste the full log — the remaining work lands as: the mandate layer, the execution layer, the scripted seller and negotiation engine, the failure-state polish, and the memory fallback._
+`0b13aeb` is an import: one commit, 68 files, 7,986 insertions, containing the Lumi World MVP — mascot, focus engine, memory, the compare/score/fill tools, preview overlay, risk table, side panel and demo store. That code was written before the event; 11:30 is when it was pushed to this repo, not when it was authored. The three commits after it (`996be88`, `84560ac`, `c1c7b3e`) are fixes to that base made at the event.
 
-In one line: the **base product** (point → remember → compare → preview) existed before the event; the **agent that has a mandate, refuses, negotiates, and executes** is what was built during it.
+Written at the event: the mandate layer, the execution layer, the scripted seller and the negotiation engine, the chat-surface detector, the failure-state polish, the memory fallback, and this documentation.
+
+_This list stops at the last commit when the README was written (12:42). Re-run the command above before submitting and paste the full log._
 
 ## Project layout
 

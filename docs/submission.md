@@ -11,7 +11,7 @@ Team: **AstraGirls**
 - [ ] Written description (below)
 - [ ] Public GitHub repo — `main` builds green, no API key in history, GLB removed
 - [ ] 2-minute demo video — see [video-script.md](video-script.md)
-- [ ] Social post tagging the partners (draft below — **fill in the real handles from the portal**)
+- [ ] Social post tagging the partners (draft below — partner names are listed; **add their handles from the portal**)
 - [ ] [Tested sites](../README.md#tested-sites) table filled in with pages we actually ran
 - [ ] [Built during the hackathon](../README.md#built-during-the-hackathon) regenerated from the final `git log`
 
@@ -41,7 +41,9 @@ What none of this can be reproduced by in a chatbox: pointing as an input modali
 
 ## Social post draft
 
-> **⚠ Replace the bracketed handles with the real partner handles from the submission portal before posting. Do not guess them.**
+> Partners are named below as plain text. **Add their @handles from the submission portal before posting** — the names here are from the event page, the handles are not.
+>
+> Partners: AI Tinkerers · OpenAI · CopilotKit · OpenRouter · Exa · Auth0 · Ambiguous AI · Trigger.dev · Mozilla · Google Cloud Run
 
 **X / Twitter (≤280 chars):**
 
@@ -50,8 +52,10 @@ What none of this can be reproduced by in a chatbox: pointing as an input modali
 > You don't describe your screen to it — you point. It remembers across tabs, negotiates in the page's own chat box, and when the seller goes above your ceiling it *refuses*.
 >
 > An agent that can say no. 🧵👇
->
-> @[AITinkerers] @[partner] @[partner]
+
+The full partner list does not fit in 280 characters with the body above. Post the partners as the first **reply** in the thread:
+
+> Built with AI Tinkerers, OpenAI, CopilotKit, OpenRouter, Exa, Auth0, Ambiguous AI, Trigger.dev, Mozilla and Google Cloud Run. #AgentsEverywhere
 
 **LinkedIn:**
 
@@ -67,7 +71,8 @@ What none of this can be reproduced by in a chatbox: pointing as an input modali
 >
 > An agent that can say no is more useful than one that can only say yes.
 >
+> Thanks to AI Tinkerers, OpenAI, CopilotKit, OpenRouter, Exa, Auth0, Ambiguous AI, Trigger.dev, Mozilla and Google Cloud Run.
+>
 > #AITinkerers #AgentsEverywhere #AI #ChromeExtension
-> @[AITinkerers] @[partner] @[partner]
 
 **Attach:** the 2-minute video, the repo link. Lead the video thumbnail on the **refusal** frame if you can pick it.
