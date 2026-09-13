@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocalStorage } from '../../shared/storage/useChromeStorage';
-import { sendMessage } from '../../shared/messaging/sendMessage';
+import { sendMessage, sendTabMessage } from '../../shared/messaging/sendMessage';
 import type { AgentAction, RiskLevel } from '../../shared/types/agentAction';
 
 const RISK_STYLE: Record<RiskLevel, string> = {
@@ -17,6 +17,19 @@ const STATUS_LABEL: Record<AgentAction['status'], string> = {
   rejected: 'Rejected',
   refused: 'Refused',
 };
+
+// Same jump as a memory card's Show: switch to the tab, then let the content script
+// scroll to the element and outline it. Approving something you cannot see is the thing
+// this panel exists to prevent.
+async function showOnPage(tabId: number, selector: string) {
+  if (tabId < 0 || !selector) return;
+  try {
+    await chrome.tabs.update(tabId, { active: true });
+    await sendTabMessage(tabId, { type: 'HIGHLIGHT_SELECTOR', selector });
+  } catch {
+    /* tab is gone */
+  }
+}
 
 export function TrustPanel() {
   const log = useLocalStorage('actionLog');
@@ -77,6 +90,13 @@ export function TrustPanel() {
             {pendingAction.risk === 'high' ? 'Lumi is waiting for explicit approval on the page.' : `Preview shown on the page — ${pending.changes.length} field(s).`}
           </p>
           <div className="mt-2 flex gap-1">
+            <button
+              className="lumi-btn !py-1 !px-2"
+              title="Switch to the tab and scroll to what is waiting"
+              onClick={() => showOnPage(pending.tabId, pendingAction.targetSelector ?? pending.changes[0]?.selector ?? '')}
+            >
+              Show
+            </button>
             <button className="lumi-btn !py-1 !px-2" onClick={() => sendMessage({ type: 'REJECT_ACTION', actionId: pending.actionId })}>
               Reject
             </button>

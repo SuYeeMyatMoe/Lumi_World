@@ -6,6 +6,10 @@ import type { AgentAction } from './agentAction';
 import type { Mission } from './mission';
 import type { MissionSuggestions, PageContext } from './pageContext';
 
+// 'focus' is the ordinary "here it is" outline; 'working' means Lumi is acting on it
+// right now, and the overlay turns amber until the action is applied or refused.
+export type HighlightMode = 'focus' | 'working';
+
 export interface DetectedFormField {
   selector: string;
   label: string;
@@ -46,7 +50,7 @@ export type RuntimeMessage =
 export type TabMessage =
   | { type: 'DETECT_FORM_FIELDS' }
   | { type: 'APPLY_FIELD_VALUES'; changes: { selector: string; value: string }[] }
-  | { type: 'HIGHLIGHT_SELECTOR'; selector: string | null }
+  | { type: 'HIGHLIGHT_SELECTOR'; selector: string | null; mode?: HighlightMode }
   | { type: 'SUBMIT_FORM'; selector: string }
   | { type: 'READ_CHAT'; selector: string }
   | { type: 'CLICK_SELECTOR'; selector: string }

@@ -61,7 +61,7 @@ registerMessageHandlers<TabMessage, TabResponseMap>({
   HIGHLIGHT_SELECTOR(msg) {
     const el = msg.selector ? resolveSelector(msg.selector) : null;
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    window.dispatchEvent(new CustomEvent(LUMI_HIGHLIGHT_EVENT, { detail: el }));
+    window.dispatchEvent(new CustomEvent(LUMI_HIGHLIGHT_EVENT, { detail: { el, mode: msg.mode ?? 'focus' } }));
     return { ok: true, data: null };
   },
   READ_PAGE_CONTEXT: () => ({ ok: true as const, data: readPageContext() }),
