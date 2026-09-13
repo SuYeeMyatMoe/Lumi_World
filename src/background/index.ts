@@ -17,6 +17,7 @@ import { checkMandate } from '../shared/riskClassifier';
 import { parseAmountLoose, parseLastPrice, parsePrice } from '../shared/dom/price';
 import { lastCounterpartPrice } from '../shared/dom/chatSurfaceDetector';
 import { showOverlay } from '../shared/overlayVisibility';
+import { suggestMissions } from './handlers/suggestMissions';
 
 // Content scripts are "untrusted contexts" for storage.session; grant access so the
 // mini mascot can read liveAgentState without round-tripping through messaging.
@@ -528,6 +529,8 @@ registerMessageHandlers<RuntimeMessage, RuntimeResponseMap>({
     await setLocal('compareResults', []);
     return { ok: true, data: null };
   },
+
+  SUGGEST_MISSIONS: () => suggestMissions(),
 });
 
 // Clear stale focus when the user leaves a tab so the mascot settles.

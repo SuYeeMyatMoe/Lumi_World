@@ -8,6 +8,7 @@ import { applyFieldValue, detectFormFields } from '../shared/dom/formFieldDetect
 import { resolveSelector } from '../shared/dom/selector';
 import { resolveChatSurface } from '../shared/dom/chatSurfaceDetector';
 import { LUMI_HIGHLIGHT_EVENT } from './events';
+import { readPageContext } from './pageContext';
 
 const HOST_ID = 'lumi-world-host';
 
@@ -57,6 +58,7 @@ registerMessageHandlers<TabMessage, TabResponseMap>({
     window.dispatchEvent(new CustomEvent(LUMI_HIGHLIGHT_EVENT, { detail: el }));
     return { ok: true, data: null };
   },
+  READ_PAGE_CONTEXT: () => ({ ok: true as const, data: readPageContext() }),
 });
 
 async function mount() {
