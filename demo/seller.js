@@ -1,6 +1,12 @@
 // Scripted seller — deterministic on purpose, so a 2-minute take always runs the same way.
 // Policy: floor RM3,950. Counter once at RM4,150, then RM3,950 final, accept anything at or above the floor.
 (function () {
+  // Idempotent: the page loads this both by tag and at runtime, because the crx dev
+  // plugin strips external module tags from this page. Wiring twice would double every
+  // seller reply, so the first load wins.
+  if (window.__lumiSellerWired) return;
+  window.__lumiSellerWired = true;
+
   var FLOOR = 3950;
   var COUNTERS = ['RM4,150 is the lowest I can do.', 'RM3,950, final.'];
   var counterIndex = 0;
