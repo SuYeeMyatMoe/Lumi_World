@@ -3,12 +3,7 @@ import { useLocalStorage } from '../../shared/storage/useChromeStorage';
 import { setLocal } from '../../shared/storage/storage';
 import { sendMessage } from '../../shared/messaging/sendMessage';
 import type { Mandate } from '../../shared/types/mission';
-
-const EXAMPLES = [
-  'ML laptop, 16 GB RAM, ceiling RM4,000, walk away above it.',
-  'Pick a camera under RM9,000 for travel and low-light video.',
-  'Help me submit my hackathon project correctly.',
-];
+import { MissionSuggestions } from './MissionSuggestions';
 
 export function MissionPanel() {
   const mission = useLocalStorage('mission');
@@ -82,15 +77,7 @@ export function MissionPanel() {
           </button>
         )}
       </div>
-      {!mission && (
-        <div className="mt-3 flex flex-col gap-1">
-          {EXAMPLES.map((ex) => (
-            <button key={ex} className="text-left text-[11px] text-lumi-muted hover:text-lumi-text" onClick={() => setDraft(ex)}>
-              → {ex}
-            </button>
-          ))}
-        </div>
-      )}
+      {!mission && <MissionSuggestions onPick={setDraft} />}
     </section>
   );
 }
