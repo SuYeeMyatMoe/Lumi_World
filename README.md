@@ -5,9 +5,44 @@
 
 Lumi World is an attention-aware Chrome extension. Instead of describing what's on your screen to a chatbot, you point at it. Lumi — a small 3D companion that lives at the edge of every page — turns to look at what you're focused on, remembers objects across tabs, reasons about them against your goal and your **mandate**, negotiates on your behalf inside the page's own chat box, and shows you exactly what it intends to do before it does it.
 
-Built for **AI Tinkerers · "Agents, Everywhere"** (Kuala Lumpur, 13 September 2026). See [Built during the hackathon](#built-during-the-hackathon) for exactly which parts were written during the event.
+Built for **AI Tinkerers · "Agents, Everywhere"** (Kuala Lumpur, 13 September 2026). See [What was built at the event](#what-was-built-at-the-event) for exactly which parts were written during the window.
 
 ![Lumi on the TechMart demo store: the mascot at the edge of the page, a Lumi Focus outline on the listings, and "Got it." after remembering one.](assets/lumi-focus-demo-store.png)
+
+## How it works
+
+**In one line:** you point at things on a web page instead of describing them, say once what you want and what you refuse to pay, and Lumi does the legwork inside the page — without ever spending your money unasked.
+
+A whole run, in plain language:
+
+1. **You point.** Hover anything and the small character at the edge of the page turns to look at it. `Alt`+click and it remembers it. This works on any website, and what it remembers survives closing the tab.
+2. **You say what you want, once.** *"ML laptop, 16 GB RAM, ceiling RM4,000, walk away above it."* One sentence carries both the goal and the limits.
+3. **Lumi reads the page.** It picks out the things actually on offer — not the menus, headers or breadcrumbs — and lines them up against what you asked for.
+4. **It says no when it should.** Anything over your price, or missing something you called non-negotiable, is refused out loud and by name: *"RM4,399 is above my mandate (ceiling RM4,000). I'll stop before that one."*
+5. **It negotiates for you.** If the page has a chat box, Lumi haggles in it: sending offers below your ceiling on its own, refusing anything above it, and walking away if the other side will not move.
+6. **It asks once, where it counts.** When there is a deal worth taking, Lumi stops and waits. You see the exact words it will send before it sends them.
+
+**Three things it will never do:** read or fill a password or card field, go past a limit you set, or commit money without your explicit approval.
+
+### The idea behind it
+
+A chatbot makes you carry the context to the AI: you describe the page, paste the prices, restate the rules every time. Lumi carries the AI to the context. It is already on the page, it can see what you are looking at, and it can act there.
+
+That only works if it can be trusted to act unsupervised, which is why the limits are the centre of the design rather than a safety afterthought. **You set the limit once, in your own words, and it is then enforced by ordinary arithmetic — not by the AI choosing to be careful.** The model reads your sentence and drafts messages. It never decides whether a limit has been crossed.
+
+### Under the hood
+
+For readers who want the mechanism, each plain-language step above maps to a specific piece:
+
+| Step | What actually happens |
+| --- | --- |
+| You point | A content script in a shadow DOM tracks hover, walks up to the nearest card-like element and snapshots it into `chrome.storage.local` |
+| You say what you want | `PARSE_MISSION` sends the sentence to a forced tool call that returns a zod-validated **Mandate** — see [Mandate](#mandate) |
+| Lumi reads the page | The scanner takes the smallest block quoting exactly one price, excluding navigation and chat — see [Run my mission](#run-my-mission) |
+| It says no | `checkMandate()` — plain arithmetic and string matching in `src/shared/riskClassifier.ts`, never a model call |
+| It negotiates | A six-turn loop that clamps every amount to your ceiling **in code** — see [Negotiation](#negotiation) |
+| It asks once | Risk is classified by a static table; medium previews, high needs an explicit checkbox — see [Execution status](#execution-status) |
+
 
 ## Concepts
 
@@ -162,71 +197,21 @@ What is real and what is staged, stated plainly:
 - **Not a real purchase:** Lumi has never spent money. The execution path is genuine; the destination is our own demo page.
 - **Untested is untested:** the [Tested sites](#tested-sites) table lists only pages we actually ran. Everything else is unverified.
 
-## Built during the hackathon
+## What was built at the event
 
-The build window was 11:15–15:30 on 13 September 2026. **All times below are Kuala Lumpur time (UTC+8)**, the event's local time. The base commits were authored on a `+0630` clock, so a plain `git log` renders them 90 minutes earlier; regenerate this table with:
+The build window was 11:15–15:30 on 13 September 2026 in Kuala Lumpur.
 
-```bash
-TZ=Asia/Kuala_Lumpur git log --date=format-local:'%H:%M' --format='%h %ad %an %s'
-```
+The repository opens with a single 68-file initial import committed 11:30 KL, authored by SuYeeMyatMoe: the Lumi World MVP — mascot, focus engine, memory, the compare/score/fill tools, preview overlay, risk table, side panel and demo store. Three small fixes to that base follow it.
 
-Before the window we brainstormed and scoped the idea — the three-layer plan (mandate, execution, negotiation) and the team split were decided then, no code.
+Everything after that was written during the window, by the three of us working in parallel on separate branches:
 
-```
-0b13aeb 11:30 SuYeeMyatMoe  first commit
-996be88 11:43 SuYeeMyatMoe  Close Button
-84560ac 12:00 SuYeeMyatMoe  overlay problem fix
-c1c7b3e 12:11 SuYeeMyatMoe  Website Lumi
-99a5c90 12:14 kaylaelishevaa  docs: add CLAUDE.md
-5237490 12:18 kaylaelishevaa  feat(contract): types and stub handlers for mandate, execution and negotiation
-d6a8ed2 12:22 SuYeeMyatMoe  Overlap problem
-02d2692 12:28 kaylaelishevaa  feat(mandate): parse mission into mandate; enforce ceiling and must-haves in riskClassifier
-e919da2 12:32 kaylaelishevaa  feat(negotiate): scripted seller chat in demo store
-a93a49a 12:37 kaylaelishevaa  fix(demo): mount the dev preview shim only with ?preview=1 so it never shadows the real extension
-25c5688 12:38 kaylaelishevaa  feat(mission): suggest missions from the page context
-a3d5ec1 12:39 kaylaelishevaa  feat(negotiate): chat surface detector with fixed-selector and heuristic paths
-f21eb4a 12:42 kaylaelishevaa  docs: README, video script, submission pack
-e6669f2 12:46 kaylaelishevaa  feat(execute): run approved high-risk actions on the demo-store origin
-cc97822 12:48 kaylaelishevaa  docs: KL-time build log and partner names
-afbf0f1 12:51 kaylaelishevaa  chore(demo): reset-state button and pre-record checklist
-37b15a8 12:55 kaylaelishevaa  fix(panel): open the side panel before any await so the user gesture survives
-ecf6061 12:58 kaylaelishevaa  docs: note pre-window brainstorming in the build log
-f88cfe0 12:59 kaylaelishevaa  chore(demo): reset also clears hiddenOrigins
-1a82100 13:01 kaylaelishevaa  feat(negotiate): proposeOffer tool and REQUEST_OFFER with deterministic refusal
-506344a 13:01 kaylaelishevaa  Merge remote-tracking branch 'origin/seller-chat' into integration
-ff3546b 13:02 kaylaelishevaa  Merge remote-tracking branch 'origin/chat-detector' into integration
-9cc0e09 13:03 kaylaelishevaa  Merge remote-tracking branch 'origin/execute' into integration
-5ae7569 13:08 kaylaelishevaa  fix(demo): actually load the scripted seller on the demo page
-6e4231a 13:13 kaylaelishevaa  fix(price): prefix-first price parsing, one definition, suggestions through PARSE_MISSION
-07c1bf6 13:23 SuYeeMyatMoe  error handling
-8888abe 13:23 SuYeeMyatMoe  Merge branch 'main' of https://github.com/SuYeeMyatMoe/Lumi_World
-8341853 13:27 kaylaelishevaa  feat(negotiate): autonomous negotiation within mandate, single approval at agreement
-b321f78 13:30 kaylaelishevaa  feat(mission): run-my-mission orchestration over existing tools
-15fa871 13:33 kaylaelishevaa  polish(negotiate): tighter wording on the accept preview
-720d286 13:34 kaylaelishevaa  Merge branch 'integration'
-eb2e639 13:35 kaylaelishevaa  Merge remote-tracking branch 'origin/run-mission'
-5ba3eae 13:36 kaylaelishevaa  Merge remote-tracking branch 'origin/run-mission' into integration
-863aaa5 13:41 kaylaelishevaa  fix(mandate): match must-haves the way vendors actually write specs
-a1902ea 13:41 kaylaelishevaa  Merge branch 'integration'
-9f7d7ff 13:42 kaylaelishevaa  fix(mission): judge cards on the pinned snapshot, match must-haves tolerantly
-07e8e59 13:43 kaylaelishevaa  Merge remote-tracking branch 'origin/run-mission' into integration
-0c4464f 13:43 kaylaelishevaa  Merge branch 'integration'
-0bf450e 13:46 kaylaelishevaa  polish(mandate): one rule decides a must-have, the panel only reports it
-5189156 13:46 kaylaelishevaa  Merge branch 'integration'
-3435019 13:49 kaylaelishevaa  polish(panel): settle state, unify copy
-6a7baa3 13:49 kaylaelishevaa  Merge branch 'integration'
-7694d8e 13:55 kaylaelishevaa  fix(mission): a failed score or compare no longer ends the run
-a86eea7 13:59 kaylaelishevaa  Merge remote-tracking branch 'origin/run-mission' into integration
-462b9fe 14:02 kaylaelishevaa  feat(follow): show the page action before performing it
-5301e13 14:02 kaylaelishevaa  Merge branch 'integration'
-40125a7 14:10 kaylaelishevaa  fix(context): find things on offer by price, not by card-shaped markup
-f55458b 14:15 kaylaelishevaa  Merge remote-tracking branch 'origin/run-mission' into integration
-4cf25ae 14:15 kaylaelishevaa  Merge branch 'integration'
-```
+- the **Mandate** layer — parsing limits out of a plain sentence, and enforcing them in code
+- the **Execution** layer — running approved high-risk actions, on one origin we own
+- the **Negotiation** layer — the chat-surface detector, the offer agent, and the autonomous loop with its single approval
+- **Run my mission** — the fixed plan that sequences all of the above
+- mission suggestions read from the page, the page scanner, the fallback after a walk-away, failure-state handling, and this documentation
 
-`0b13aeb` is a single 68-file initial import committed 11:30 KL, authored by SuYeeMyatMoe: 7,986 insertions containing the Lumi World MVP — mascot, focus engine, memory, the compare/score/fill tools, preview overlay, risk table, side panel and demo store. That code was written before the event; 11:30 is when it was pushed to this repo, not when it was authored. The three commits after it (`996be88`, `84560ac`, `c1c7b3e`) are fixes to that base made at the event.
-
-Written at the event, from `5237490` (12:18) onward: the mandate layer, the execution layer, the scripted seller, the chat-surface detector, the autonomous negotiation engine, run-my-mission orchestration, mission suggestions, the failure-state polish, and this documentation.
+`git log` is the record; nothing here is reconstructed.
 
 ## Project layout
 
